@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 8536299700850570729, guid: 4dc57c51261acf142af88c06c6ec67a1, type: 3}
+  m_Sprite: {fileID: -7536552348962050782, guid: fb699dd7c7d930041a59c16a42fad073, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -193,7 +193,7 @@ MonoBehaviour:
   _mipmapMode: 0
   _dynamicResolution: 1
   _redrawResolutionThreshold: 2147483647
-  rectTransform: {fileID: 0}
+  rectTransform: {fileID: 2173372371656567190}
   maxTextureSize: 2048
   manualRedraw: 0
   renderInterval: 1
