@@ -107,4 +107,6 @@ InitTestScene*.unity*
 
 # macOS
 .DS_Store
+
 Tp1/Tp1/.vsconfig
+Tp2/Build/
