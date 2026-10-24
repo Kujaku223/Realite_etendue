@@ -1196,9 +1196,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_CameraToFace: {fileID: 0}
   m_ObjectPrefabs:
-  - {fileID: 3528030813400442418, guid: 9ae1a3a0f0769e84aa8c6b77454cdacd, type: 3}
-  - {fileID: 6010694797657176832, guid: 2b95f16b700ddb54686dd83b1f5b1104, type: 3}
-  - {fileID: 8087219614535563230, guid: ce74633331bcc4745b69aeca17038165, type: 3}
+  - {fileID: 4568029104488205585, guid: 784c72eeb3e275a42aabfa66f19a8484, type: 3}
+  - {fileID: 4568029104488205585, guid: a6ebc5380cc0dbd4882d81ba31e1001c, type: 3}
+  - {fileID: 4568029104488205585, guid: 2e6b0b081ab907944b62a606a63ca25b, type: 3}
   m_SpawnVisualizationPrefab: {fileID: 0}
   m_SpawnOptionIndex: 0
   m_OnlySpawnInView: 1
@@ -1646,6 +1646,11 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 450, y: 600}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!224 &628303067 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3193457953763947744, guid: ef3886a9667424aedaa5b3b3e1285dbb, type: 3}
+  m_PrefabInstance: {fileID: 1362734343}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &637151521 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5963138107579739024, guid: 02644bbd28622410a84cf154fc436b8a, type: 3}
