@@ -1,0 +1,50 @@
+GameDev.tv General Asset License 2.0 (KayKit Assets)
+Last Updated: 8th December 2025
+
+-------------------------
+Summary
+-------------------------
+We want you to make awesome stuff with our assets!  
+You're generally free to use however you like, just don't redistribute or resell the assets themselves. 
+If you're unsure about the terms of this license, please contact us at support@gamedev.tv
+
+
+-------------------------
+Definitions
+-------------------------
+1. "Asset(s)" refers to all files provided in this package, including models, textures, animations, prefabs, scripts, project files, and associated materials. 
+2. "Project(s)" refers to any video game, prototype, interactive media, or other creative work.
+3. "Licensor" refers to GameDev.tv and its respective contributors
+
+-------------------------
+License Grant
+-------------------------
+You are granted a non-exclusive, worldwide, perpetual license to: 
+* Use the Assets in personal and commercial Projects.
+* Modify, Remix, and adapt the Assets to suit the needs of your Project.
+* Publish, distribute, and sell any finished Project that contains the assets, unless such project would conflict with the restrictions outlined below.
+
+-------------------------
+Restrictions
+-------------------------
+You may not:
+* Sell, share, or redistribute the Assets as standalone files, whether original or modified.
+* Include the Assets in any asset library, asset pack, template, tool, or product where they can be easily extracted or reused by others.
+* Claim the Assets as your own creation, whether original or modified.
+
+-------------------------
+Ownership
+-------------------------
+The Licensor retains full ownership of the Assets and all associated intellectual property rights. 
+
+-------------------------
+Attribution
+-------------------------
+Attribution is not required, but credit is always welcome and appreciated. 
+If you choose, you can acknowledge "GameDev.tv" and "KayKit" in your Project. 
+
+-------------------------
+Warranty Disclaimer
+-------------------------
+The Assets are provided "as is" without warranties or guarantees of any kind. 
+However, if you encounter issues with this Asset, please contact support@gamedev.tv.
