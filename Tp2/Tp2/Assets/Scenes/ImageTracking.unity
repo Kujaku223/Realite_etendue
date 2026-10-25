@@ -318,6 +318,7 @@ GameObject:
   - component: {fileID: 122737720}
   - component: {fileID: 122737719}
   - component: {fileID: 122737718}
+  - component: {fileID: 122737721}
   m_Layer: 0
   m_Name: Hand Tracker
   m_TagString: Untagged
@@ -372,6 +373,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &122737721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 122737717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d194ee4461fa94441838b3ab6a62becd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HandCursorDelete
+  cursor: {fileID: 1367256607}
+  arCamera: {fileID: 2074662527}
+  cursorCanvas: {fileID: 1845082498}
+  spawnedObjectsParent: {fileID: 436358034}
 --- !u!114 &151853166 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2512387470528047737, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
@@ -1646,11 +1663,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 450, y: 600}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!224 &628303067 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 3193457953763947744, guid: ef3886a9667424aedaa5b3b3e1285dbb, type: 3}
-  m_PrefabInstance: {fileID: 1362734343}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &637151521 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5963138107579739024, guid: 02644bbd28622410a84cf154fc436b8a, type: 3}
@@ -6317,6 +6329,11 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!20 &2074662527 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 2512387469002778331, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
+  m_PrefabInstance: {fileID: 331264285}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2086985258
 GameObject:
   m_ObjectHideFlags: 0
