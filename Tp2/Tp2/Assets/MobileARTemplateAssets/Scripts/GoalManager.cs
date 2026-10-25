@@ -205,6 +205,16 @@ namespace UnityEngine.XR.Templates.AR
                 m_CurrentGoal = m_OnboardingGoals.Dequeue();
                 m_StepList[m_CurrentGoalIndex - 1].stepObject.SetActive(false);
                 m_StepList[m_CurrentGoalIndex].stepObject.SetActive(true);
+                GameObject prompt = m_StepList[m_CurrentGoalIndex].stepObject;
+
+                Debug.Log(
+                    $"Étape {m_CurrentGoalIndex} : {prompt.name} | " +
+                    $"Dans une scène : {prompt.scene.IsValid()} | " +
+                    $"Actif : {prompt.activeSelf} | " +
+                    $"Actif dans la hiérarchie : {prompt.activeInHierarchy}",
+                    prompt);
+                
+                
             }
             else
             {
@@ -300,6 +310,7 @@ namespace UnityEngine.XR.Templates.AR
             m_OnboardingGoals.Enqueue(translateHintsGoal);
             m_OnboardingGoals.Enqueue(scaleHintsGoal);
             m_OnboardingGoals.Enqueue(rotateHintsGoal);
+            m_OnboardingGoals.Enqueue(new Goal(OnboardingGoals.Hints));
 
             m_CurrentGoal = m_OnboardingGoals.Dequeue();
             m_AllGoalsFinished = false;
