@@ -1,3 +1,4 @@
+using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit.Inputs;
@@ -35,6 +36,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
     float m_StartSeparation;
     bool m_WasKinematic;
     bool m_UsedGravity;
+    VRPlayerScaleCapsule m_PlayerCapsule;
 
     public bool isScaling { get; private set; }
 
@@ -73,7 +75,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
             float separation = Vector3.Distance(m_Left.transform.position, m_Right.transform.position);
             float multiplier = Mathf.Clamp(m_StartMultiplier * separation / m_StartSeparation,
                 m_MinimumScaleMultiplier, m_MaximumScaleMultiplier);
-            transform.localScale = m_StartScale * (multiplier / m_StartMultiplier);
+            ApplyScaleWithPlayerContact(multiplier, separation);
             ApplyLockedPose();
             return;
         }
@@ -108,6 +110,8 @@ public sealed class VRTwoHandScale : MonoBehaviour
 
         m_Left = left;
         m_Right = right;
+        var origin = left.GetComponentInParent<XROrigin>();
+        m_PlayerCapsule = origin != null ? origin.GetComponentInChildren<VRPlayerScaleCapsule>() : null;
         m_StartSeparation = separation;
         m_StartScale = transform.localScale;
 
@@ -129,6 +133,79 @@ public sealed class VRTwoHandScale : MonoBehaviour
         isScaling = true;
         s_ActiveScale = this;
         ApplyLockedPose();
+    }
+
+    void ApplyScaleWithPlayerContact(float multiplier, float separation)
+    {
+        Vector3 currentScale = transform.localScale;
+        Vector3 desiredScale = m_StartScale * (multiplier / m_StartMultiplier);
+        if (m_PlayerCapsule == null || !m_PlayerCapsule.isActiveAndEnabled ||
+            m_PlayerCapsule.capsule == null || !m_PlayerCapsule.capsule.enabled ||
+            desiredScale.sqrMagnitude <= currentScale.sqrMagnitude)
+        {
+            // Shrinking is always available, including while already overlapping.
+            transform.localScale = desiredScale;
+            return;
+        }
+
+        m_PlayerCapsule.UpdateShape();
+        if (OverlapsPlayer())
+        {
+            RebaseScale(separation);
+            return;
+        }
+
+        // Query the actual collider shapes before accepting a larger scale.
+        // ComputePenetration does not require waiting for a physics/trigger event.
+        transform.localScale = desiredScale;
+        if (!OverlapsPlayer())
+            return;
+
+        // Approach contact without allowing a large one-frame step into the player.
+        float allowed = 0f;
+        float blocked = 1f;
+        for (int i = 0; i < 8; ++i)
+        {
+            float fraction = (allowed + blocked) * 0.5f;
+            transform.localScale = Vector3.Lerp(currentScale, desiredScale, fraction);
+            if (OverlapsPlayer())
+                blocked = fraction;
+            else
+                allowed = fraction;
+        }
+
+        transform.localScale = Vector3.Lerp(currentScale, desiredScale, allowed);
+        Physics.SyncTransforms();
+        RebaseScale(separation);
+    }
+
+    bool OverlapsPlayer()
+    {
+        // Sync changed collider scales and the tracked capsule before the query,
+        // including when automatic transform synchronization is disabled.
+        Physics.SyncTransforms();
+        CapsuleCollider player = m_PlayerCapsule.capsule;
+        foreach (var collider in m_Interactable.colliders)
+        {
+            if (collider == null || !collider.enabled || collider.isTrigger ||
+                !collider.gameObject.activeInHierarchy)
+                continue;
+
+            if (Physics.ComputePenetration(collider, collider.transform.position, collider.transform.rotation,
+                player, player.transform.position, player.transform.rotation, out _, out _))
+                return true;
+        }
+
+        return false;
+    }
+
+    void RebaseScale(float separation)
+    {
+        // Discard blocked hand movement so shrinking responds immediately and
+        // moving away from the player does not release accumulated growth.
+        m_StartScale = transform.localScale;
+        m_StartMultiplier = m_StartScale.magnitude / m_InitialScale.magnitude;
+        m_StartSeparation = Mathf.Max(k_MinimumHandSeparation, separation);
     }
 
     bool CanContinue()
@@ -194,6 +271,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
 
         m_Left = null;
         m_Right = null;
+        m_PlayerCapsule = null;
     }
 
     public static bool IsControllerLocked(XRBaseInputInteractor controller)

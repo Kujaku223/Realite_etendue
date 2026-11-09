@@ -153,7 +153,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 833832197186995429}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ad34abafad169848a38072baa96cdb2, type: 3}
+  m_Script: {fileID: 11500000, guid: fe3d67b02e874c8ab05294eb196a730d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_InteractionManager: {fileID: 0}
@@ -221,12 +221,12 @@ MonoBehaviour:
   m_ParentInteractableObject: {fileID: 0}
   m_AttachTransform: {fileID: 0}
   m_SecondaryAttachTransform: {fileID: 0}
-  m_UseDynamicAttach: 0
+  m_UseDynamicAttach: 1
   m_MatchAttachPosition: 1
   m_MatchAttachRotation: 1
   m_SnapToColliderVolume: 1
   m_ReinitializeDynamicAttachEverySingleGrab: 1
-  m_AttachEaseInTime: 0.1
+  m_AttachEaseInTime: 0.4
   m_MovementType: 1
   m_PredictedVisualsTransform: {fileID: 0}
   m_VelocityDamping: 1
@@ -311,6 +311,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c84b5d61926f442c8350a9fc327690e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_PullDuration: 0.4
 --- !u!114 &2663252182714785727
 MonoBehaviour:
   m_ObjectHideFlags: 0

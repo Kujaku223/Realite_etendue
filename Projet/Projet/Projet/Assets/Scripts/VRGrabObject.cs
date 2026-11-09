@@ -8,9 +8,13 @@ using UnityEngine.XR.Interaction.Toolkit.Transformers;
 
 /// <summary>Grip to carry an object, with grabbing blocked during resizing.</summary>
 [DisallowMultipleComponent]
-[RequireComponent(typeof(XRGrabInteractable), typeof(Rigidbody), typeof(XRGeneralGrabTransformer))]
+[RequireComponent(typeof(VRHitPointGrabInteractable), typeof(Rigidbody), typeof(XRGeneralGrabTransformer))]
 public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
 {
+    [SerializeField, Min(0.01f)]
+    [Tooltip("Time in seconds for the grabbed hit point to ease toward the moving hand.")]
+    float m_PullDuration = 0.4f;
+
     XRGrabInteractable m_Interactable;
     VRTwoHandScale m_Scaler;
 
@@ -46,9 +50,11 @@ public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
     {
         m_Interactable.selectMode = InteractableSelectMode.Single;
         m_Interactable.movementType = XRBaseInteractable.MovementType.Kinematic;
-        m_Interactable.useDynamicAttach = false;
+        m_Interactable.useDynamicAttach = true;
+        m_Interactable.matchAttachPosition = true;
+        m_Interactable.matchAttachRotation = true;
         m_Interactable.farAttachMode = InteractableFarAttachMode.Near;
-        m_Interactable.attachEaseInTime = 0.1f;
+        m_Interactable.attachEaseInTime = Mathf.Max(0.01f, m_PullDuration);
         m_Interactable.trackPosition = true;
         m_Interactable.trackRotation = true;
         m_Interactable.trackScale = false;
@@ -57,6 +63,13 @@ public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
         var transformer = GetComponent<XRGeneralGrabTransformer>();
         transformer.allowOneHandedScaling = false;
         transformer.allowTwoHandedScaling = false;
+    }
+
+    void OnValidate()
+    {
+        m_PullDuration = Mathf.Max(0.01f, m_PullDuration);
+        if (Application.isPlaying && m_Interactable != null)
+            m_Interactable.attachEaseInTime = m_PullDuration;
     }
 
     public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable target)
