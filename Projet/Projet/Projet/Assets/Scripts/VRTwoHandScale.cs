@@ -36,7 +36,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
     float m_StartSeparation;
     bool m_WasKinematic;
     bool m_UsedGravity;
-    VRPlayerScaleCapsule m_PlayerCapsule;
+    CapsuleCollider m_PlayerCapsule;
 
     public bool isScaling { get; private set; }
 
@@ -111,7 +111,8 @@ public sealed class VRTwoHandScale : MonoBehaviour
         m_Left = left;
         m_Right = right;
         var origin = left.GetComponentInParent<XROrigin>();
-        m_PlayerCapsule = origin != null ? origin.GetComponentInChildren<VRPlayerScaleCapsule>() : null;
+        var playerCapsuleObject = origin != null ? origin.transform.Find("Player Scale Capsule") : null;
+        m_PlayerCapsule = playerCapsuleObject != null ? playerCapsuleObject.GetComponent<CapsuleCollider>() : null;
         m_StartSeparation = separation;
         m_StartScale = transform.localScale;
 
@@ -139,8 +140,8 @@ public sealed class VRTwoHandScale : MonoBehaviour
     {
         Vector3 currentScale = transform.localScale;
         Vector3 desiredScale = m_StartScale * (multiplier / m_StartMultiplier);
-        if (m_PlayerCapsule == null || !m_PlayerCapsule.isActiveAndEnabled ||
-            m_PlayerCapsule.capsule == null || !m_PlayerCapsule.capsule.enabled ||
+        if (m_PlayerCapsule == null || !m_PlayerCapsule.enabled ||
+            !m_PlayerCapsule.gameObject.activeInHierarchy ||
             desiredScale.sqrMagnitude <= currentScale.sqrMagnitude)
         {
             // Shrinking is always available, including while already overlapping.
@@ -148,7 +149,6 @@ public sealed class VRTwoHandScale : MonoBehaviour
             return;
         }
 
-        m_PlayerCapsule.UpdateShape();
         if (OverlapsPlayer())
         {
             RebaseScale(separation);
@@ -181,10 +181,10 @@ public sealed class VRTwoHandScale : MonoBehaviour
 
     bool OverlapsPlayer()
     {
-        // Sync changed collider scales and the tracked capsule before the query,
+        // Sync changed collider scales and the player capsule before the query,
         // including when automatic transform synchronization is disabled.
         Physics.SyncTransforms();
-        CapsuleCollider player = m_PlayerCapsule.capsule;
+        CapsuleCollider player = m_PlayerCapsule;
         foreach (var collider in m_Interactable.colliders)
         {
             if (collider == null || !collider.enabled || collider.isTrigger ||

@@ -1,3 +1,4 @@
+using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Attachment;
@@ -6,7 +7,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Transformers;
 
-/// <summary>Grip to carry an object, with grabbing blocked during resizing.</summary>
+/// <summary>Grip to carry an object, subject to resizing and size restrictions.</summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(VRHitPointGrabInteractable), typeof(Rigidbody), typeof(XRGeneralGrabTransformer))]
 public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
@@ -82,6 +83,41 @@ public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
 
         return interactor is XRBaseInputInteractor controller &&
             controller.handedness != InteractorHandedness.None &&
-            !VRTwoHandScale.IsControllerLocked(controller);
+            !VRTwoHandScale.IsControllerLocked(controller) &&
+            !ExceedsHeadsetHeight(controller);
+    }
+
+    bool ExceedsHeadsetHeight(XRBaseInputInteractor controller)
+    {
+        var origin = controller.GetComponentInParent<XROrigin>();
+        if (origin == null || origin.Camera == null)
+            return true;
+
+        Transform floor = origin.Origin != null ? origin.Origin.transform : origin.transform;
+        float headsetHeight = origin.Camera.transform.position.y - floor.position.y;
+        if (headsetHeight <= Mathf.Epsilon)
+            return true;
+
+        // Bounds must include the latest resizing, rotation, and parent transforms.
+        Physics.SyncTransforms();
+        Bounds bounds = default;
+        bool hasBounds = false;
+        foreach (var collider in m_Interactable.colliders)
+        {
+            if (collider == null || !collider.enabled || collider.isTrigger ||
+                !collider.gameObject.activeInHierarchy)
+                continue;
+
+            if (hasBounds)
+                bounds.Encapsulate(collider.bounds);
+            else
+            {
+                bounds = collider.bounds;
+                hasBounds = true;
+            }
+        }
+
+        return hasBounds && bounds.size.y > headsetHeight &&
+            !Mathf.Approximately(bounds.size.y, headsetHeight);
     }
 }

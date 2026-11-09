@@ -13,6 +13,8 @@ For Unity 6 and XR Interaction Toolkit 3.5.1.
    populated automatically at startup).
 3. Set the VR Hit Point Grab Interactable's Interaction Layer Mask to
    `grabbedAndScaled`. Set **Pull Duration** on `VRGrabObject` (default 0.4 seconds).
+   Grabbing automatically uses the selecting player's current headset height as
+   the maximum object height.
 4. Use a stationary parent with uniform scale. Resizing is anchored to the root's
    transform pivot; it preserves world position and rotation, not the bottom face
    of a mesh whose pivot is at its centre.
@@ -36,6 +38,21 @@ only one grab interactable on the object. Preserve its collider list, interactio
 layers, and event assignments when doing so. Existing project objects using
 `VRGrabObject` have already been migrated with their component references retained.
 
+## Grab height limit
+
+Objects taller than the headset's current height above the XR Origin's floor
+cannot start a new grab. `VRGrabObject` reads the camera from the selecting
+controller's XR Origin and compares that height against the combined world-space
+bounds of the object's active non-trigger colliders. This accounts for scaling,
+parent scale, rotation, and changes in player height while crouching or standing.
+An object the same height as the headset is still allowed.
+
+The height rule filters grip selection only. Two-trigger resizing remains available,
+so shrinking an object to headset height or less makes it grabbable again.
+An already-held object stays held until grip release. A controller without an
+XR Origin, camera, or positive headset height cannot start a grab. This height
+check is independent of the fixed 2 m capsule used for player overlap protection.
+
 ## Controller setup
 
 Use an XR Interaction Manager and the project's XR Origin with left and right
@@ -55,13 +72,11 @@ masks; the example cube remains on the Default physics layer.
 
 ## Player contact during resizing
 
-The shared XR Origin prefab includes a **Player Scale Capsule** child, with a
-trigger Capsule Collider and `VRPlayerScaleCapsule`. It follows the headset's
-horizontal position and adjusts its height from the rig floor to the headset,
-including room-scale movement and crouching. Its default radius is **0.25 m**;
-adjust **Radius** on `VRPlayerScaleCapsule` to change the player body width.
-The sensor uses the Ignore Raycast physics layer and leaves locomotion to the
-rig's existing Character Controller.
+The shared XR Origin prefab includes a **Player Scale Capsule** child with a
+fixed trigger Capsule Collider: **Height = 2 m**, **Radius = 0.25 m**, and
+**Center = (0, 1, 0)**. It stays at the XR Origin's local position zero and moves
+with that rig. It uses the Ignore Raycast physics layer and leaves locomotion
+to the rig's existing Character Controller. No capsule-tracking script is needed.
 
 While resizing, overlapping the player capsule blocks further growth. Proposed
 growth is also checked before it is accepted, so a large size change stops at
@@ -69,9 +84,10 @@ contact. Shrinking remains available immediately. Blocked hand movement is
 discarded, so moving away from the object does not cause a sudden size jump.
 Move clear of the object and spread your hands again to resume growing it.
 
-Scalable objects automatically find this capsule through the selecting
-controller's XR Origin. For another rig, add a **Player Scale Capsule** child
-at the XR Origin's local position zero and add `VRPlayerScaleCapsule` to it.
+Scalable objects automatically find the Capsule Collider on the child named
+**Player Scale Capsule** through the selecting controller's XR Origin. For
+another rig, add a child with that exact name at the XR Origin's local position
+zero and add a trigger Capsule Collider with the dimensions above.
 Use primitive or convex colliders on scalable moving objects.
 
 Resizing reads the Activate input directly, so **Allow Hovered Activate** does
@@ -130,8 +146,12 @@ In Play Mode with a headset or XR Interaction Simulator:
 6. Resize beside the player capsule: growth must stop at contact, including a
    large outward hand movement. Walk into an already scaled object and confirm
    further growth is blocked while shrinking responds immediately. Step away
-   and spread the hands to resume growth without a jump. Repeat while crouching
-   and moving around within the tracked room.
+   and spread the hands to resume growth without a jump. Repeat after moving
+   the XR Origin through locomotion.
+7. Check objects just below, at, and above the headset's height above the rig
+   floor. Taller objects must be ungrabbable but still resizable; shrink them to
+   headset height or less and grab again. Crouch and stand to confirm the cutoff
+   updates. Also check rotated objects, scaled parents, and child colliders.
 
 Headset interaction, visual placement, and throwing need interactive verification;
 a successful script compilation alone does not verify these behaviors.
