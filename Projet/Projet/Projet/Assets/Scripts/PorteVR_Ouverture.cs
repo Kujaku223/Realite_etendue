@@ -11,8 +11,9 @@ public class PorteVR : MonoBehaviour
     [SerializeField] float m_DistanceFermeture = 4.5f;
 
     XRSimpleInteractable m_Interactable;
+    Transform m_Repere;
     Quaternion m_RotationFermee;
-    Vector3 m_Centre;
+    Vector3 m_CentreLocal;
     float m_Angle;
     bool m_Ouverte;
     bool m_Proche;
@@ -20,8 +21,9 @@ public class PorteVR : MonoBehaviour
     void Awake()
     {
         m_Interactable = GetComponent<XRSimpleInteractable>();
+        m_Repere = transform.parent != null ? transform.parent : transform;
         m_RotationFermee = transform.localRotation;
-        m_Centre = transform.position - transform.right * 0.58f;
+        m_CentreLocal = m_Repere.InverseTransformPoint(transform.position - transform.right * (0.58f * transform.lossyScale.x));
     }
 
     void OnEnable() => m_Interactable.selectEntered.AddListener(_ => m_Ouverte = !m_Ouverte);
@@ -52,7 +54,7 @@ public class PorteVR : MonoBehaviour
         if (tete == null)
             return;
 
-        Vector3 ecart = tete.transform.position - m_Centre;
+        Vector3 ecart = m_Repere.InverseTransformPoint(tete.transform.position) - m_CentreLocal;
         ecart.y = 0f;
         float distance = ecart.magnitude;
 

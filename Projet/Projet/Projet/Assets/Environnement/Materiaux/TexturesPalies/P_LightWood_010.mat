@@ -58,7 +58,7 @@ Material:
     - _Seuil: 0
     - _XRMotionVectorsPass: 1
     m_Colors:
-    - _BaseColor: {r: 0.62745106, g: 0.43137255, b: 0.2352941, a: 1}
+    - _BaseColor: {r: 0.88991284, g: 0.82888824, b: 0.72738945, a: 1}
     - _Creme: {r: 0.9137255, g: 0.8509804, b: 0.74509805, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
