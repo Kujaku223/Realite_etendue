@@ -51,6 +51,12 @@ item continues following the hand and reattaches when released inside. Parenting
 changes preserve world position, rotation, and scale. The existing key is handled
 automatically; only items that started as house contents are tracked.
 
+Maison in Gym Interaction has a 1,000 kg dynamic Rigidbody. Its animated door's
+collider is disabled directly in the Maison prefab and its unused Rigidbody is
+removed. `PorteVR` handles proximity opening without collision-filtering code.
+The door cannot push or block objects and cannot be targeted by XR rays.
+The house's floor and walls continue to collide normally with objects.
+
 ## Grab height limit
 
 Objects taller than the headset's current height above the XR Origin's floor
