@@ -29,3 +29,6 @@
 
 # Packages
 *.unitypackage filter=lfs diff=lfs merge=lfs -text
+
+# Prefabs Unity
+*.prefab filter=lfs diff=lfs merge=lfs -text
