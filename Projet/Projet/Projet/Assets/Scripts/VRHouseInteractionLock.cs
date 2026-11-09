@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-/// <summary>Disables house manipulation while the headset is inside its interior.</summary>
+/// <summary>Locks house manipulation inside and manages parenting of its movable contents.</summary>
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(XRInteractionUpdateOrder.k_InteractionManager - 1)]
 public sealed class VRHouseInteractionLock : MonoBehaviour
@@ -21,8 +22,35 @@ public sealed class VRHouseInteractionLock : MonoBehaviour
     InteractionLayerMask m_OutsideLayers;
     bool m_PlayerInside;
     bool m_CapturedOutsideLayers;
+    sealed class HouseItem
+    {
+        public XRGrabInteractable interactable;
+        public Transform originalParent;
+        public bool retainTransformParent;
+    }
 
-    void Awake() => FindTarget();
+    readonly List<HouseItem> m_InteriorItems = new List<HouseItem>();
+
+    void Awake()
+    {
+        FindTarget();
+
+        // Remember the original contents: XRI temporarily unparents held objects.
+        foreach (var item in GetComponentsInChildren<XRGrabInteractable>(true))
+        {
+            if (item.transform != transform &&
+                item.GetComponentInParent<VRHouseInteractionLock>(true) == this &&
+                ContainsWorldPoint(item.transform.position))
+            {
+                m_InteriorItems.Add(new HouseItem
+                {
+                    interactable = item,
+                    originalParent = item.transform.parent,
+                    retainTransformParent = item.retainTransformParent,
+                });
+            }
+        }
+    }
 
     void OnEnable()
     {
@@ -31,6 +59,8 @@ public sealed class VRHouseInteractionLock : MonoBehaviour
 
     void Update()
     {
+        UpdateItemParents();
+
         // The prefab may have no grab component until one is added to its scene instance.
         // Only the root interactable is controlled; the door keeps its own interaction.
         if (!FindTarget())
@@ -49,19 +79,7 @@ public sealed class VRHouseInteractionLock : MonoBehaviour
             m_Headset = camera != null ? camera.transform : null;
         }
 
-        bool inside = false;
-        if (m_Headset != null && m_InteriorVolumes != null)
-        {
-            Vector3 headLocal = transform.InverseTransformPoint(m_Headset.position);
-            foreach (Bounds volume in m_InteriorVolumes)
-            {
-                if (volume.Contains(headLocal))
-                {
-                    inside = true;
-                    break;
-                }
-            }
-        }
+        bool inside = m_Headset != null && ContainsWorldPoint(m_Headset.position);
 
         if (inside == m_PlayerInside)
             return;
@@ -69,6 +87,58 @@ public sealed class VRHouseInteractionLock : MonoBehaviour
         m_PlayerInside = inside;
         m_Interactable.interactionLayers = inside ? m_InsideLayers : m_OutsideLayers;
         m_Grab.SetInteractionBlocked(inside);
+    }
+
+    bool ContainsWorldPoint(Vector3 worldPoint)
+    {
+        if (m_InteriorVolumes == null)
+            return false;
+
+        Vector3 localPoint = transform.InverseTransformPoint(worldPoint);
+        foreach (Bounds volume in m_InteriorVolumes)
+        {
+            if (volume.Contains(localPoint))
+                return true;
+        }
+
+        return false;
+    }
+
+    void UpdateItemParents()
+    {
+        for (int i = m_InteriorItems.Count - 1; i >= 0; --i)
+        {
+            HouseItem entry = m_InteriorItems[i];
+            XRGrabInteractable item = entry.interactable;
+            if (item == null)
+            {
+                m_InteriorItems.RemoveAt(i);
+                continue;
+            }
+
+            if (ContainsWorldPoint(item.transform.position))
+            {
+                item.retainTransformParent = entry.retainTransformParent;
+
+                // Let XRI keep held objects unparented. It may have captured a null
+                // parent on an outside grab, so also restore parenting after release.
+                if (!item.isSelected && !item.transform.IsChildOf(transform))
+                {
+                    Transform parent = entry.originalParent;
+                    if (parent == null || !parent.IsChildOf(transform))
+                        parent = transform;
+                    item.transform.SetParent(parent, true);
+                }
+                continue;
+            }
+
+            // Drop must not restore the house parent captured by XRI on grab.
+            item.retainTransformParent = false;
+            if (item.transform.IsChildOf(transform))
+                item.transform.SetParent(null, true);
+
+            // Keep tracking detached contents so they can return to the house.
+        }
     }
 
     bool FindTarget()

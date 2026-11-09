@@ -39,6 +39,18 @@ only one grab interactable on the object. Preserve its collider list, interactio
 layers, and event assignments when doing so. Existing project objects using
 `VRGrabObject` have already been migrated with their component references retained.
 
+## House contents
+
+`VRHouseInteractionLock` on Maison remembers its child XR Grab Interactables
+whose transform pivots start inside its interior zones. When an item's pivot
+leaves those zones, it detaches from the house while preserving its world pose
+and scale. This also disables XRI's Retain Transform Parent for that item, so
+dropping a held item outside cannot attach it back to Maison. Bringing it back
+inside restores its original house parent and parent-retention setting. A held
+item continues following the hand and reattaches when released inside. Parenting
+changes preserve world position, rotation, and scale. The existing key is handled
+automatically; only items that started as house contents are tracked.
+
 ## Grab height limit
 
 Objects taller than the headset's current height above the XR Origin's floor
@@ -179,6 +191,13 @@ In Play Mode with a headset or XR Interaction Simulator:
    and grip/two-trigger resizing both stop. Leave through the doorway and confirm
    grabbedAndScaled returns. Repeat after moving, rotating, or scaling the house;
    check the exterior cutouts remain outside and that the door still works.
+9. Grab the key and release it inside Maison: it should return to its house
+   parent. Then carry it outside and release it; move, rotate, and scale Maison
+   and confirm the key stays independent. Repeat by throwing an item outside,
+   then bring it back inside and release it. Confirm it returns to its original
+   house parent without jumping and follows subsequent house movement and scale.
+   Repeat several inside/outside trips, including picking it up outside and
+   throwing it back inside.
 
 Headset interaction, visual placement, and throwing need interactive verification;
 a successful script compilation alone does not verify these behaviors.
