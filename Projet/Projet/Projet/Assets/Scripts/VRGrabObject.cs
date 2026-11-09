@@ -18,9 +18,11 @@ public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
 
     XRGrabInteractable m_Interactable;
     VRTwoHandScale m_Scaler;
+    bool m_ThrowOnDetachBeforeBlock;
 
     public XRGrabInteractable interactable => m_Interactable;
     public bool canProcess => isActiveAndEnabled;
+    public bool interactionBlocked { get; private set; }
 
     void Awake()
     {
@@ -75,6 +77,9 @@ public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
 
     public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable target)
     {
+        if (interactionBlocked)
+            return false;
+
         if (m_Scaler != null && m_Scaler.isScaling)
             return false;
 
@@ -85,6 +90,38 @@ public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
             controller.handedness != InteractorHandedness.None &&
             !VRTwoHandScale.IsControllerLocked(controller) &&
             !ExceedsHeadsetHeight(controller);
+    }
+
+    public void SetInteractionBlocked(bool blocked)
+    {
+        if (interactionBlocked == blocked)
+            return;
+
+        interactionBlocked = blocked;
+        if (m_Interactable == null)
+            return;
+
+        if (!blocked)
+        {
+            m_Interactable.throwOnDetach = m_ThrowOnDetachBeforeBlock;
+            return;
+        }
+
+        // Entering the house cancels manipulation without throwing the house.
+        // Keep throwing off through the toolkit's deferred detach until the player leaves.
+        m_ThrowOnDetachBeforeBlock = m_Interactable.throwOnDetach;
+        m_Interactable.throwOnDetach = false;
+        if (m_Scaler != null)
+            m_Scaler.EndScale();
+        if (m_Interactable.isSelected && m_Interactable.interactionManager != null)
+            m_Interactable.interactionManager.CancelInteractableSelection((IXRSelectInteractable)m_Interactable);
+
+        var body = GetComponent<Rigidbody>();
+        if (body != null && !body.isKinematic)
+        {
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+        }
     }
 
     bool ExceedsHeadsetHeight(XRBaseInputInteractor controller)

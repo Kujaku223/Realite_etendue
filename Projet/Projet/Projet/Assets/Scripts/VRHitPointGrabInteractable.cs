@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
@@ -7,6 +8,12 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 [AddComponentMenu("XR/Interactables/VR Hit Point Grab Interactable")]
 public sealed class VRHitPointGrabInteractable : XRGrabInteractable
 {
+    protected override void Reset()
+    {
+        base.Reset();
+        interactionLayers = InteractionLayerMask.GetMask("grabbedAndScaled");
+    }
+
     protected override void InitializeDynamicAttachPose(
         IXRSelectInteractor interactor, Transform dynamicAttachTransform)
     {

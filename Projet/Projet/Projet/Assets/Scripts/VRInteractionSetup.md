@@ -11,8 +11,9 @@ For Unity 6 and XR Interaction Toolkit 3.5.1.
    Box, Sphere, Capsule, or convex Mesh Collider for a moving object. Make sure
    the VR Hit Point Grab Interactable's Colliders list includes it (an empty list is
    populated automatically at startup).
-3. Set the VR Hit Point Grab Interactable's Interaction Layer Mask to
-   `grabbedAndScaled`. Set **Pull Duration** on `VRGrabObject` (default 0.4 seconds).
+3. VR Hit Point Grab Interactable defaults its Interaction Layer Mask to
+   `grabbedAndScaled` when added or reset in the editor. The Inspector's setting
+   is preserved at runtime. Set **Pull Duration** on `VRGrabObject` (default 0.4 seconds).
    Grabbing automatically uses the selecting player's current headset height as
    the maximum object height.
 4. Use a stationary parent with uniform scale. Resizing is anchored to the root's
@@ -52,6 +53,28 @@ so shrinking an object to headset height or less makes it grabbable again.
 An already-held object stays held until grip release. A controller without an
 XR Origin, camera, or positive headset height cannot start a grab. This height
 check is independent of the fixed 2 m capsule used for player overlap protection.
+
+## Maison interior interaction lock
+
+`Assets/Environnement/Prefabs/Maison.prefab` has `VRHouseInteractionLock` on
+its root. The Maison instance in Gym Interaction already supplies the root
+grab and resize components; the lock finds those automatically. The prefab's
+door and geometry are preserved. HouseNoDoor has not been given this lock.
+
+When the headset enters any **Interior Volumes** zone, the house root's XR
+Interaction Layer Mask switches to **Default**, blocking grabbing and resizing.
+An active grab or resize ends on entry without throwing the house. Leaving all
+interior zones restores the original **grabbedAndScaled** mask and throwing.
+The existing headset-height restriction still applies when starting a grab.
+The outside mask is taken from the Inspector. Runtime grab setup preserves it,
+and the house switches it only when entering or leaving the interior.
+
+The four zones follow the stepped house footprint in the root's local space,
+so they move, rotate, and resize with the house. Select Maison to see their cyan
+outlines in the Scene view; adjust **Interior Volumes** on the lock component
+if the layout changes. The test uses headset position, so a controller reaching
+through a window alone does not count as entering the house. This changes XR
+interaction layers, not the GameObject physics layer.
 
 ## Controller setup
 
@@ -152,6 +175,10 @@ In Play Mode with a headset or XR Interaction Simulator:
    floor. Taller objects must be ungrabbable but still resizable; shrink them to
    headset height or less and grab again. Crouch and stand to confirm the cutoff
    updates. Also check rotated objects, scaled parents, and child colliders.
+8. Walk into Maison and confirm its root Interaction Layer Mask becomes Default
+   and grip/two-trigger resizing both stop. Leave through the doorway and confirm
+   grabbedAndScaled returns. Repeat after moving, rotating, or scaling the house;
+   check the exterior cutouts remain outside and that the door still works.
 
 Headset interaction, visual placement, and throwing need interactive verification;
 a successful script compilation alone does not verify these behaviors.

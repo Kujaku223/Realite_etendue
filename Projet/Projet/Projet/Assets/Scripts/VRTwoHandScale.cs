@@ -80,7 +80,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
             return;
         }
 
-        if (s_ActiveScale != null || !m_Grab.isActiveAndEnabled ||
+        if (s_ActiveScale != null || !m_Grab.isActiveAndEnabled || m_Grab.interactionBlocked ||
             !m_Interactable.isActiveAndEnabled || m_Interactable.isSelected)
             return;
 
@@ -210,7 +210,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
 
     bool CanContinue()
     {
-        return m_Grab.isActiveAndEnabled && m_Interactable.isActiveAndEnabled &&
+        return m_Grab.isActiveAndEnabled && !m_Grab.interactionBlocked && m_Interactable.isActiveAndEnabled &&
             !m_Interactable.isSelected && IsTriggerHeld(m_Left) && IsTriggerHeld(m_Right);
     }
 
