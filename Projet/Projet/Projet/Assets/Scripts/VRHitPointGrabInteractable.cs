@@ -8,6 +8,63 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 [AddComponentMenu("XR/Interactables/VR Hit Point Grab Interactable")]
 public sealed class VRHitPointGrabInteractable : XRGrabInteractable
 {
+    bool m_FinishHouseRelease;
+
+    protected override void OnEnable()
+    {
+        // XRI auto-fills an empty collider list with every descendant collider.
+        // Exclude independent contents before registering, regardless of enable order.
+        var body = GetComponent<Rigidbody>();
+        colliders.RemoveAll(collider => collider == null ||
+            collider.attachedRigidbody != body ||
+            collider.GetComponentInParent<XRBaseInteractable>(true) != this);
+        base.OnEnable();
+        VRHouseInteractionLock.RegisterItem(this);
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnDisable();
+        m_FinishHouseRelease = false;
+        VRHouseInteractionLock.UnregisterItem(this);
+    }
+
+    protected override void OnSelectEntering(SelectEnterEventArgs args)
+    {
+        // Restore dynamic physics before XRI saves the Rigidbody's grab state.
+        m_FinishHouseRelease = false;
+        VRHouseInteractionLock.PrepareForInteraction(this);
+        base.OnSelectEntering(args);
+    }
+
+    protected override void OnSelectExiting(SelectExitEventArgs args)
+    {
+        VRHouseInteractionLock.MarkReleasePending(this);
+        base.OnSelectExiting(args);
+    }
+
+    protected override void OnSelectExited(SelectExitEventArgs args)
+    {
+        base.OnSelectExited(args);
+        m_FinishHouseRelease = !isSelected;
+    }
+
+    public override void ProcessInteractable(XRInteractionUpdateOrder.UpdatePhase updatePhase)
+    {
+        base.ProcessInteractable(updatePhase);
+        if (updatePhase != XRInteractionUpdateOrder.UpdatePhase.Late)
+            return;
+
+        // XRI applies its deferred detach/throw in the base Late processing.
+        if (m_FinishHouseRelease && !isSelected)
+        {
+            m_FinishHouseRelease = false;
+            VRHouseInteractionLock.FinishInteraction(this);
+        }
+        if (TryGetComponent<VRHouseInteractionLock>(out var house))
+            house.SyncFrozenContents();
+    }
+
     protected override void Reset()
     {
         base.Reset();

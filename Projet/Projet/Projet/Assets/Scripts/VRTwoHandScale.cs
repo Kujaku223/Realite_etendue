@@ -13,11 +13,11 @@ public sealed class VRTwoHandScale : MonoBehaviour
     const float k_MinimumHandSeparation = 0.01f;
 
     [SerializeField, Range(0.01f, 1f)]
-    [Tooltip("Smallest size relative to the object's initial local scale.")]
+    [Tooltip("Smallest size relative to the object's initial world scale.")]
     float m_MinimumScaleMultiplier = 0.25f;
 
     [SerializeField, Min(1f)]
-    [Tooltip("Largest size relative to the object's initial local scale.")]
+    [Tooltip("Largest size relative to the object's initial world scale.")]
     float m_MaximumScaleMultiplier = 4f;
 
     // A latched pair must not resize another object when its rays drift away.
@@ -28,7 +28,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
     Rigidbody m_Body;
     XRBaseInputInteractor m_Left;
     XRBaseInputInteractor m_Right;
-    Vector3 m_InitialScale;
+    Vector3 m_InitialWorldScale;
     Vector3 m_StartScale;
     Vector3 m_LockedPosition;
     Quaternion m_LockedRotation;
@@ -51,7 +51,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
         m_Grab = GetComponent<VRGrabObject>();
         m_Interactable = GetComponent<XRGrabInteractable>();
         m_Body = GetComponent<Rigidbody>();
-        m_InitialScale = transform.localScale;
+        m_InitialWorldScale = transform.lossyScale;
     }
 
     void OnDisable() => EndScale();
@@ -117,13 +117,16 @@ public sealed class VRTwoHandScale : MonoBehaviour
         m_StartScale = transform.localScale;
 
         // Rebase each lock from the actual scale, so regrabbing never resets the size.
-        float initialLength = m_InitialScale.magnitude;
+        float initialLength = m_InitialWorldScale.magnitude;
         if (initialLength < Mathf.Epsilon)
             return;
-        m_StartMultiplier = m_StartScale.magnitude / initialLength;
+        m_StartMultiplier = transform.lossyScale.magnitude / initialLength;
         if (m_StartMultiplier < Mathf.Epsilon)
             return;
 
+        VRHouseInteractionLock.PrepareForInteraction(m_Interactable);
+        // Preparing an item can detach it while preserving its world size.
+        m_StartScale = transform.localScale;
         m_LockedPosition = transform.position;
         m_LockedRotation = transform.rotation;
         m_WasKinematic = m_Body.isKinematic;
@@ -204,7 +207,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
         // Discard blocked hand movement so shrinking responds immediately and
         // moving away from the player does not release accumulated growth.
         m_StartScale = transform.localScale;
-        m_StartMultiplier = m_StartScale.magnitude / m_InitialScale.magnitude;
+        m_StartMultiplier = transform.lossyScale.magnitude / m_InitialWorldScale.magnitude;
         m_StartSeparation = Mathf.Max(k_MinimumHandSeparation, separation);
     }
 
@@ -241,6 +244,8 @@ public sealed class VRTwoHandScale : MonoBehaviour
         m_Body.position = m_LockedPosition;
         m_Body.rotation = m_LockedRotation;
         transform.SetPositionAndRotation(m_LockedPosition, m_LockedRotation);
+        if (TryGetComponent<VRHouseInteractionLock>(out var house))
+            house.SyncFrozenContents();
     }
 
     void ClearVelocity()
@@ -272,6 +277,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
         m_Left = null;
         m_Right = null;
         m_PlayerCapsule = null;
+        VRHouseInteractionLock.FinishInteraction(m_Interactable);
     }
 
     public static bool IsControllerLocked(XRBaseInputInteractor controller)

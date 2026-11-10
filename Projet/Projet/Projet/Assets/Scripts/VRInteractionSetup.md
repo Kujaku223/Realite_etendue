@@ -11,12 +11,16 @@ For Unity 6 and XR Interaction Toolkit 3.5.1.
    Box, Sphere, Capsule, or convex Mesh Collider for a moving object. Make sure
    the VR Hit Point Grab Interactable's Colliders list includes it (an empty list is
    populated automatically at startup).
+   The custom interactable excludes colliders belonging to another Rigidbody or
+   nested interactable before XR registration, so Maison cannot claim its items'
+   colliders and block their targeting.
 3. VR Hit Point Grab Interactable defaults its Interaction Layer Mask to
    `grabbedAndScaled` when added or reset in the editor. The Inspector's setting
    is preserved at runtime. Set **Pull Duration** on `VRGrabObject` (default 0.4 seconds).
    Grabbing automatically uses the selecting player's current headset height as
    the maximum object height.
-4. Use a stationary parent with uniform scale. Resizing is anchored to the root's
+4. Use a parent with uniform scale. Maison can move and resize with its settled
+   contents attached. Resizing is anchored to the root's
    transform pivot; it preserves world position and rotation, not the bottom face
    of a mesh whose pivot is at its centre.
 
@@ -41,15 +45,38 @@ layers, and event assignments when doing so. Existing project objects using
 
 ## House contents
 
-`VRHouseInteractionLock` on Maison remembers its child XR Grab Interactables
-whose transform pivots start inside its interior zones. When an item's pivot
-leaves those zones, it detaches from the house while preserving its world pose
-and scale. This also disables XRI's Retain Transform Parent for that item, so
-dropping a held item outside cannot attach it back to Maison. Bringing it back
-inside restores its original house parent and parent-retention setting. A held
-item continues following the hand and reattaches when released inside. Parenting
-changes preserve world position, rotation, and scale. The existing key is handled
-automatically; only items that started as house contents are tracked.
+`VRHouseInteractionLock` uses Maison's existing interior zones and hierarchy.
+It tracks original dynamic contents and adopts unheld objects using
+`VRHitPointGrabInteractable` when their pivots enter a zone. No extra component
+is needed on an item beyond its existing grab/resize setup. House roots are
+excluded. In overlapping houses, the current owner is retained while the item
+is inside; otherwise the containing house with the closest pivot owns it.
+
+- **Falling inside:** the item is parented to Maison with normal physics. It is
+  woken once on entry or release, including initial contents, so it can fall.
+- **Settled inside:** when `Rigidbody.IsSleeping()` becomes true, the item becomes
+  kinematic with interpolation disabled. Its local position, rotation, and scale
+  stay fixed, so moving, rotating, inverting, or resizing Maison carries it along.
+- **Temporarily paused:** if Maison is grabbed or resized while an item is still
+  falling, the item becomes kinematic until that manipulation finishes. It then
+  resumes falling from rest. It must settle before becoming permanently attached.
+- **Individually manipulated or outside:** grabbing or resizing an item releases
+  its house attachment and restores its physics before the interaction captures
+  that state. XRI finishes normal throwing before house ownership is reconsidered.
+  Outside items detach; releasing or bringing one inside adopts it again.
+
+Parent changes preserve world pose and size. Original contents reuse their
+existing parent when possible; newly adopted objects use the house root.
+Frozen items keep their colliders enabled for XR targeting. Only collision pairs
+between that item's Rigidbody and Maison's own Rigidbody are temporarily ignored,
+so frozen contents cannot push their house. Previously ignored pairs are left
+alone. Physics settings and pairs changed by this feature are restored on pickup,
+exit, disable, or destruction. Disabling the house lock leaves the hierarchy in
+place and restores the contents' physics; enabling it restarts fall/settle handling.
+
+Resize limits use the object's world scale at startup while scale changes are
+applied locally. Entering or leaving Maison therefore does not reset its size
+limits. Keep parents uniformly scaled to preserve proportions during reparenting.
 
 Maison in Gym Interaction has a 1,000 kg dynamic Rigidbody. Its animated door's
 collider is disabled directly in the Maison prefab and its unused Rigidbody is
@@ -197,13 +224,22 @@ In Play Mode with a headset or XR Interaction Simulator:
    and grip/two-trigger resizing both stop. Leave through the doorway and confirm
    grabbedAndScaled returns. Repeat after moving, rotating, or scaling the house;
    check the exterior cutouts remain outside and that the door still works.
-9. Grab the key and release it inside Maison: it should return to its house
-   parent. Then carry it outside and release it; move, rotate, and scale Maison
-   and confirm the key stays independent. Repeat by throwing an item outside,
-   then bring it back inside and release it. Confirm it returns to its original
-   house parent without jumping and follows subsequent house movement and scale.
-   Repeat several inside/outside trips, including picking it up outside and
-   throwing it back inside.
+9. Drop the key inside Maison: it must fall normally, sleep, and then become
+   kinematic with interpolation off. Shake, rotate, invert, and resize Maison;
+   settled contents must keep their local pose and scale proportionally. Inspect
+   initial contents too: they must get a chance to fall before settling.
+10. Grab or resize Maison while the key is still falling. Confirm the key pauses
+    relative to the house and resumes falling from rest after release. Repeat
+    with both grip and two-trigger resizing.
+11. Grab a settled key and throw it outside. Confirm normal gravity, throwing,
+    and house collisions return and the key stays independent when Maison moves.
+    Bring the red cube inside and release it: it must be adopted, fall, settle,
+    and follow the house. Repeat entry/exit and individual resizing, including
+    differently sized houses; reparenting must preserve world size and size limits.
+12. Disable/re-enable the house lock, item interactable, scaler, and whole objects
+    in each state. Confirm physics and collision exclusions are restored, later
+    interactions still work, and settled contents do not push the house. Test
+    overlapping houses if used: retain the current owner until exiting its zones.
 
 Headset interaction, visual placement, and throwing need interactive verification;
 a successful script compilation alone does not verify these behaviors.
