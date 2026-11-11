@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 /// <summary>A matching key releases this padlock and opens its assigned door.</summary>
 [DisallowMultipleComponent]
@@ -11,6 +12,8 @@ public sealed class PadlockUnlock : MonoBehaviour
     [SerializeField] Rigidbody m_DoorHinge;
     [SerializeField] float m_OpenAngle = 90f;
     [SerializeField, Min(0.01f)] float m_OpeningSpeed = 140f;
+
+    public UnityEvent onUnlocked = new UnityEvent();
 
     Rigidbody m_Body;
     BoxCollider m_Sensor;
@@ -60,6 +63,7 @@ public sealed class PadlockUnlock : MonoBehaviour
         m_Body.linearVelocity = Vector3.zero;
         m_Body.angularVelocity = Vector3.zero;
         m_Body.WakeUp();
+        onUnlocked.Invoke();
     }
 
     void FixedUpdate()

@@ -192,6 +192,58 @@ at the scene root. It is a 0.4 m cube at world position `(-0.75, 0.2, -20.97)`,
 on the ground in front of the XR Origin's starting pose. It uses the existing
 `M_Porte_Rouge` material and has both custom components already attached.
 
+## Green cube warp
+
+Unlocking PorteRouge invokes `PadlockUnlock.onUnlocked` immediately, while the
+door begins opening. `DoorWarpSpawner.SpawnOnce()` creates one **Green Warp Cube**
+at the door's **Warp Cube Spawn Point**, initially local `(0, 0.2, -1.5)`.
+Edit that child transform to adjust its position. The shared door prefab and
+Gym Interaction's replacement padlock are both wired to the spawner.
+
+The cube uses `VRGrabObject` without two-hand resizing and the `grabbedAndScaled`
+interaction layer. Hold grip to pull it toward the controller. **Selecting it
+with a distant ray does not warp immediately.** `GreenCubeWarp` waits until the
+tracked controller position reaches the cube's solid collider, within the
+editable **Contact Tolerance** (default 1 cm). Releasing grip before contact
+cancels the approach and does not change scenes. Touch without a grab does nothing.
+
+After contact, hand selections are cancelled and the headset fades to black over
+**0.6 seconds**. `EmptyPlains` loads in Single mode while the view stays black,
+then fades back in over **0.6 seconds** once the new rig and return cube initialize.
+Adjust **Fade Out Duration** and **Fade In Duration** on the Green Warp Cube prefab.
+`XRSceneTransition` uses a camera-space UI overlay for both headset eyes and
+unscaled time. Its temporary runner survives the load, binds to the new camera,
+and removes itself after revealing the scene; it does not preserve the old rig.
+The plains contains a 500 m gray floor, sky, light, the shared XR Origin, one XR
+Interaction Manager, and one green return cube. The return cube is positioned
+on the floor two metres in front of the arriving headset. Each hand must release
+grip before it can select a cube after a warp, preventing an automatic round trip.
+
+The return cube's **Restart Level** mode reloads the departing scene. Player
+position, object poses, door/lock state, and puzzle progress start fresh. Only the
+scene path is retained. Launching EmptyPlains directly uses **Fallback Level**
+(Gym Interaction). Both destinations must be enabled in the build scene list;
+invalid routes log an error and leave the player in the current scene.
+
+Environnement remains the startup scene. Gym Interaction, Gym Perspective, and
+EmptyPlains are also enabled for scene loading. Each has a scene-owned XR
+Interaction Manager so unloading a level removes its manager with it.
+
+The **Complete XR Origin Set Up Variant** prefab owns the control settings and
+controller hints previously overridden in Gym Interaction: right-hand smooth
+turning, disabled 180-degree turn-around, teleport settings, disabled jump/climb,
+the Resize callouts, and the removed teleport hint. Gym Interaction keeps its
+spawn pose and name; EmptyPlains inherits the same controls from the prefab.
+
+Check the complete flow in Play Mode/headset: unlock and confirm exactly one
+cube appears; grab at a distance and release before contact; then hold until
+contact and confirm the warp. Repeat with either hand and hold grip during the
+load to verify no immediate return. Grab the return cube, confirm a fresh level,
+and repeat the full cycle. The plains must contain no previous level objects.
+Verify the fade covers both eyes through loading, restores the view on a failed
+load, and that movement, turning, grip/trigger bindings, and hints match after
+each trip. Check a direct Play launch of EmptyPlains as well.
+
 ## Manual checks
 
 In Play Mode with a headset or XR Interaction Simulator:
