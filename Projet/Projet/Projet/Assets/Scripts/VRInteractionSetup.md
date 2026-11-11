@@ -6,7 +6,8 @@ For Unity 6 and XR Interaction Toolkit 3.5.1.
 
 1. Add `VRTwoHandScale` to the object's root for grabbing and resizing. Unity
    also adds `VRGrabObject`, `VRHitPointGrabInteractable`, `Rigidbody`, and
-   `XRGeneralGrabTransformer`. For grabbing only, add `VRGrabObject` instead.
+   `XRGeneralGrabTransformer`, and `VRObjectFeedback`. For grabbing only, add
+   `VRGrabObject` instead.
 2. Provide an enabled, non-trigger collider on the root or its children. Use a
    Box, Sphere, Capsule, or convex Mesh Collider for a moving object. Make sure
    the VR Hit Point Grab Interactable's Colliders list includes it (an empty list is
@@ -191,6 +192,48 @@ Open `Assets/Scenes/Gyms/Gym Interaction.unity` and find **Red Interaction Cube*
 at the scene root. It is a 0.4 m cube at world position `(-0.75, 0.2, -20.97)`,
 on the ground in front of the XR Origin's starting pose. It uses the existing
 `M_Porte_Rouge` material and has both custom components already attached.
+
+## Target feedback, sounds, and wrist countdown
+
+The shared XR Origin uses **7.5-degree far cone casts** on both hands, increased
+from 6 degrees to make small objects easier to aim at. Reach remains 10 m;
+near detection, visible beam width, and interaction layers are unchanged.
+
+`VRObjectFeedback` is added automatically with `VRGrabObject`. Existing objects
+have been migrated. It gives hovered, held, or resize-locked objects a white
+**2-pixel outline**. Original materials and LOD distances are preserved; separate
+child interactables are excluded from their parent's outline. The outline uses
+depth testing and does not add colliders, shadows, or targeting surfaces.
+
+Select **Assets/Resources/VRFeedbackDefaults.asset** to adjust outline settings,
+clips, and volumes for all default objects. Assign your own Audio Clips to
+**Thud Clip**, **Grab Clip**, **Resize Loop Clip**, and **Timer Beep Clip**.
+The current clips in **Assets/Audio/VRFeedback/** are generated placeholders.
+For different feedback on one object, create another profile and assign it to
+that object's VR Object Feedback **Profile** field.
+
+The grab cue plays once on successful selection. A spatial resize loop plays
+only while size actually changes, stopping within 0.1 seconds when hands stop
+or a limit blocks resizing. Solid impacts produce spatial thuds above 0.35 m/s,
+with a 0.2-second per-object cooldown and volume increasing with impact speed.
+These object sounds use no Doppler effect and a 1–15 m distance range. The mask,
+shell, and clear material references belong to the outline effect; retain them
+when replacing audio clips.
+
+**Gym Interaction** contains an **Interaction Level Timer**, defaulting to
+**300 seconds**. It creates a 12 × 6 cm display above the left controller, with
+white `MM:SS` text on a dark background. It has no collider or UI raycaster and
+does not intercept targeting. Counting starts after an entry fade finishes.
+At **00:00**, the timer reserves the same transition guard used by the cubes,
+plays three 2D beeps 0.5 seconds apart, then fades to EmptyPlains. Other warp
+requests cannot interrupt that sequence. EmptyPlains has no countdown; grabbing
+its return cube reloads the level with a fresh **05:00** timer and reset puzzles.
+
+For a short manual check, temporarily set **Duration Seconds** to 3 before
+entering Play Mode, verify the beeps and fade, then restore the saved value to
+300. Check wrist readability, both-eye outlines, LOD changes, walls occluding
+outlines, impact cooldown, resize limits, and simultaneous timer/cube attempts
+with the headset. No test scripts are required.
 
 ## Green cube warp
 

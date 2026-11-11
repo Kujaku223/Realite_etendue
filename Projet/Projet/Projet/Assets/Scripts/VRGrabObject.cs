@@ -10,6 +10,7 @@ using UnityEngine.XR.Interaction.Toolkit.Transformers;
 /// <summary>Grip to carry an object, subject to resizing and size restrictions.</summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(VRHitPointGrabInteractable), typeof(Rigidbody), typeof(XRGeneralGrabTransformer))]
+[RequireComponent(typeof(VRObjectFeedback))]
 public sealed class VRGrabObject : MonoBehaviour, IXRSelectFilter
 {
     [SerializeField, Min(0.01f)]

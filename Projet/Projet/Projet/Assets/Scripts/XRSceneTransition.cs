@@ -11,11 +11,13 @@ public sealed class XRSceneTransition : MonoBehaviour
     Canvas m_Canvas;
     CanvasGroup m_Group;
     Action<bool> m_Finished;
+    public static bool IsTransitioning => s_Active != null;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetTransition() => s_Active = null;
 
-    public static bool TryLoad(string scenePath, float fadeOut, float fadeIn, Action<bool> finished)
+    public static bool TryLoad(string scenePath, float fadeOut, float fadeIn, Action<bool> finished,
+        AudioClip warningClip = null, int warningCount = 0, float warningInterval = 0.5f, float warningVolume = 0.4f)
     {
         if (s_Active != null)
             return false;
@@ -33,7 +35,8 @@ public sealed class XRSceneTransition : MonoBehaviour
         {
             s_Active.CreateFadeCanvas();
             SceneManager.sceneLoaded += s_Active.OnSceneLoaded;
-            s_Active.StartCoroutine(s_Active.Load(scenePath, fadeOut, fadeIn));
+            s_Active.StartCoroutine(s_Active.Load(scenePath, fadeOut, fadeIn,
+                warningClip, warningCount, warningInterval, warningVolume));
             return true;
         }
         catch (Exception exception)
@@ -85,8 +88,20 @@ public sealed class XRSceneTransition : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode) => BindCamera();
 
-    IEnumerator Load(string scenePath, float fadeOut, float fadeIn)
+    IEnumerator Load(string scenePath, float fadeOut, float fadeIn,
+        AudioClip warningClip, int warningCount, float warningInterval, float warningVolume)
     {
+        if (warningCount > 0)
+        {
+            var audio = gameObject.AddComponent<AudioSource>();
+            audio.playOnAwake = false;
+            audio.spatialBlend = 0f;
+            for (int i = 0; i < warningCount; ++i)
+            {
+                if (warningClip != null) audio.PlayOneShot(warningClip, Mathf.Clamp01(warningVolume));
+                yield return new WaitForSecondsRealtime(Mathf.Max(0.01f, warningInterval));
+            }
+        }
         yield return Fade(1f, fadeOut);
         // Present a completely black frame before any scene loading begins.
         yield return null;

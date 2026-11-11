@@ -26,6 +26,7 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
     static string s_LevelScene;
     static bool s_Loading;
     static bool s_RequireGripRelease;
+    public static bool IsTransitioning => s_Loading || XRSceneTransition.IsTransitioning;
 
     XRGrabInteractable m_Interactable;
     Rigidbody m_Body;
@@ -135,7 +136,7 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
 
     void LateUpdate()
     {
-        if (s_Loading || !IsHeldAtController())
+        if (IsTransitioning || !IsHeldAtController())
             return;
 
         string level = gameObject.scene.path;
@@ -185,33 +186,68 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
         }
 
         XROrigin origin = m_SelectedHand.GetComponentInParent<XROrigin>();
+        m_LoadStarted = StartTransition(destination, level, m_Mode == WarpMode.ToPlains, origin,
+            m_FadeOutDuration, m_FadeInDuration);
+        if (!m_LoadStarted)
+        {
+            m_OwnsTransition = false;
+            m_SelectedHand = null;
+        }
+    }
+
+    /// <summary>Reserves the same route/guard as the cubes, including optional timeout beeps.</summary>
+    public static bool TryWarpToPlains(Scene sourceScene, AudioClip warningClip = null,
+        int warningCount = 0, float warningInterval = 0.5f, float warningVolume = 0.4f)
+    {
+        if (IsTransitioning) return false;
+        const string plains = "Assets/Scenes/EmptyPlains.unity";
+        if (!sourceScene.IsValid() || string.IsNullOrEmpty(sourceScene.path) ||
+            !Application.CanStreamedLevelBeLoaded(sourceScene.path) || !Application.CanStreamedLevelBeLoaded(plains))
+        {
+            Debug.LogError("GreenCubeWarp needs the source level and EmptyPlains enabled in the build scene list.");
+            return false;
+        }
+        XROrigin origin = null;
+        foreach (var candidate in FindObjectsByType<XROrigin>(FindObjectsSortMode.None))
+        {
+            if (candidate.gameObject.scene == sourceScene) { origin = candidate; break; }
+        }
+        s_Loading = true;
+        return StartTransition(plains, sourceScene.path, true, origin, 0.6f, 0.6f,
+            warningClip, warningCount, warningInterval, warningVolume);
+    }
+
+    static bool StartTransition(string destination, string level, bool saveLevel, XROrigin origin,
+        float fadeOut, float fadeIn, AudioClip warningClip = null, int warningCount = 0,
+        float warningInterval = 0.5f, float warningVolume = 0.4f)
+    {
         string previousLevel = s_LevelScene;
+        bool started = false;
         try
         {
             CancelHandSelections(origin);
-            if (m_Mode == WarpMode.ToPlains)
+            if (saveLevel)
                 s_LevelScene = level;
             s_RequireGripRelease = true;
             // Only the fade overlay survives; the level and rig restart fresh.
-            m_LoadStarted = XRSceneTransition.TryLoad(destination, m_FadeOutDuration, m_FadeInDuration, loaded =>
+            started = XRSceneTransition.TryLoad(destination, fadeOut, fadeIn, loaded =>
             {
                 if (!loaded)
                     s_LevelScene = previousLevel;
                 s_Loading = false;
-            });
+            }, warningClip, warningCount, warningInterval, warningVolume);
         }
         catch (System.Exception exception)
         {
-            Debug.LogError("GreenCubeWarp could not prepare the transition: " + exception.Message, this);
+            Debug.LogError("GreenCubeWarp could not prepare the transition: " + exception.Message);
         }
-        if (!m_LoadStarted)
+        if (!started)
         {
             s_LevelScene = previousLevel;
             s_Loading = false;
-            m_OwnsTransition = false;
-            m_SelectedHand = null;
-            Debug.LogError("GreenCubeWarp could not start the headset fade. Release grip and try again.", this);
+            Debug.LogError("GreenCubeWarp could not start the headset fade. Release grip and try again.");
         }
+        return started;
     }
 
     static void CancelHandSelections(XROrigin origin)
