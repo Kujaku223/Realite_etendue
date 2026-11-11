@@ -815,6 +815,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1151143922}
     m_Modifications:
+    - target: {fileID: 910200021, guid: 37a1623126c8b46468f5a98a1f483352, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 3.105
+      objectReference: {fileID: 0}
+    - target: {fileID: 910200021, guid: 37a1623126c8b46468f5a98a1f483352, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.224
+      objectReference: {fileID: 0}
     - target: {fileID: 4080754915776634846, guid: 37a1623126c8b46468f5a98a1f483352, type: 3}
       propertyPath: m_Name
       value: PorteRouge
@@ -860,8 +868,12 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 4306503987645607250, guid: 37a1623126c8b46468f5a98a1f483352, type: 3}
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 5082524738653747817, guid: 37a1623126c8b46468f5a98a1f483352, type: 3}
+      insertIndex: 0
+      addedObject: {fileID: 1428828945}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 37a1623126c8b46468f5a98a1f483352, type: 3}
 --- !u!4 &114290560 stripped
@@ -8409,6 +8421,89 @@ CapsuleCollider:
   m_Height: 4.016046
   m_Direction: 1
   m_Center: {x: 0, y: 2.008023, z: 0}
+--- !u!1001 &1428828944
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 114290560}
+    m_Modifications:
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.8385
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2.8385
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2.8385
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.342
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.3272
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 2.225
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9983704
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.05706625
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 6.543
+      objectReference: {fileID: 0}
+    - target: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4306503987809214854, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_Name
+      value: Padlock_with_Logic
+      objectReference: {fileID: 0}
+    - target: {fileID: 910200003, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+      propertyPath: m_DoorHinge
+      value: ''
+      objectReference: {fileID: 1428828946}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+--- !u!4 &1428828945 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3497069454454143804, guid: 722c48efecddcec458b46056f03c6161, type: 3}
+  m_PrefabInstance: {fileID: 1428828944}
+  m_PrefabAsset: {fileID: 0}
+--- !u!54 &1428828946 stripped
+Rigidbody:
+  m_CorrespondingSourceObject: {fileID: 910200010, guid: 37a1623126c8b46468f5a98a1f483352, type: 3}
+  m_PrefabInstance: {fileID: 114290559}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1437594047
 PrefabInstance:
   m_ObjectHideFlags: 0
