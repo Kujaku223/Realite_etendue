@@ -27,12 +27,18 @@ Material:
         m_Texture: {fileID: 2800000, guid: c259a6676a7e2df4eb2301f8280e56be, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Masque:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Desaturation: 0.85
-    - _Palissement: 0.72
+    - _Cull: 2
+    - _Desaturation: 1
+    - _Palissement: 0.85
+    - _Seuil: 0
     m_Colors:
     - _BaseColor: {r: 0.6901961, g: 0.7490196, b: 0.7725491, a: 0}
-    - _Creme: {r: 0.94509804, g: 0.91764706, b: 0.85882354, a: 1}
+    - _Creme: {r: 0.9268422, g: 0.9533505, b: 0.9656579, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

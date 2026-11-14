@@ -140,7 +140,7 @@ Material:
     - _CullMode: 0
     - _CullModeForward: 0
     - _DepthOffsetEnable: 0
-    - _Desaturation: 0.9
+    - _Desaturation: 1
     - _DoubleSidedEnable: 1
     - _DoubleSidedNormalMode: 1
     - _DstBlend: 0
@@ -148,7 +148,7 @@ Material:
     - _EnableBlendModePreserveSpecularLighting: 0
     - _EnableFogOnTransparent: 1
     - _OpaqueCullMode: 2
-    - _Palissement: 0.8
+    - _Palissement: 0.85
     - _QueueControl: 1
     - _QueueOffset: 0
     - _RayTracing: 0
@@ -194,7 +194,7 @@ Material:
     - Color_AF14EE56: {r: 0.8745098, g: 0.89411765, b: 0.7921569, a: 1}
     - Color_af892e36b16742d1b5a31e2fb9c43b3d: {r: 0.8745098, g: 0.89411765, b: 0.7921569, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Creme: {r: 0.8745098, g: 0.89411765, b: 0.7921569, a: 1}
+    - _Creme: {r: 0.8839688, g: 0.9092508, b: 0.9209889, a: 1}
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

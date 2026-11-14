@@ -34,11 +34,11 @@ Material:
     m_Ints: []
     m_Floats:
     - _Cull: 2
-    - _Desaturation: 0.85
+    - _Desaturation: 1
     - _Palissement: 0.92
     - _Seuil: 0
     m_Colors:
     - _BaseColor: {r: 0.45490205, g: 0.45490205, b: 0.45490205, a: 1}
-    - _Creme: {r: 0.87058824, g: 0.85490197, b: 0.80784315, a: 1}
+    - _Creme: {r: 0.8613773, g: 0.8860132, b: 0.89745134, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

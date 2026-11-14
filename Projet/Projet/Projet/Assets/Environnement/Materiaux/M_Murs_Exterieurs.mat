@@ -39,6 +39,6 @@ Material:
     - _Seuil: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Creme: {r: 0.9372549, g: 0.9019608, b: 0.8392157, a: 1}
+    - _Creme: {r: 0.9129386, g: 0.9390492, b: 0.951172, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

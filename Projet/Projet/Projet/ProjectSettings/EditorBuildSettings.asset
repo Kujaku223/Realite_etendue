@@ -8,6 +8,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Environnement.unity
     guid: 41ae3b1eef22b47739dcdc2fa7cf2b44
+  - enabled: 1
+    path: Assets/Scenes/Gyms/Gym Interaction.unity
+    guid: 81dd9066c31754943bc688bf40d26c3d
+  - enabled: 1
+    path: Assets/Scenes/Gyms/Gym Perspective.unity
+    guid: 9b0398ec9c38f22448e839aeae32af55
+  - enabled: 1
+    path: Assets/Scenes/EmptyPlains.unity
+    guid: b620d8de05b547e7a0c61e0736b4f762
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: bfa1182bd221b4ca89619141f66f1260, type: 2}
     Unity.XR.WindowsMR.Settings: {fileID: 11400000, guid: dc5a169419fa04987b057f65238cf3ba, type: 2}

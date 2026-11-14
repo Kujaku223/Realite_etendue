@@ -6,16 +6,22 @@ For Unity 6 and XR Interaction Toolkit 3.5.1.
 
 1. Add `VRTwoHandScale` to the object's root for grabbing and resizing. Unity
    also adds `VRGrabObject`, `VRHitPointGrabInteractable`, `Rigidbody`, and
-   `XRGeneralGrabTransformer`. For grabbing only, add `VRGrabObject` instead.
+   `XRGeneralGrabTransformer`, and `VRObjectFeedback`. For grabbing only, add
+   `VRGrabObject` instead.
 2. Provide an enabled, non-trigger collider on the root or its children. Use a
    Box, Sphere, Capsule, or convex Mesh Collider for a moving object. Make sure
    the VR Hit Point Grab Interactable's Colliders list includes it (an empty list is
    populated automatically at startup).
-3. Set the VR Hit Point Grab Interactable's Interaction Layer Mask to
-   `grabbedAndScaled`. Set **Pull Duration** on `VRGrabObject` (default 0.4 seconds).
+   The custom interactable excludes colliders belonging to another Rigidbody or
+   nested interactable before XR registration, so Maison cannot claim its items'
+   colliders and block their targeting.
+3. VR Hit Point Grab Interactable defaults its Interaction Layer Mask to
+   `grabbedAndScaled` when added or reset in the editor. The Inspector's setting
+   is preserved at runtime. Set **Pull Duration** on `VRGrabObject` (default 0.4 seconds).
    Grabbing automatically uses the selecting player's current headset height as
    the maximum object height.
-4. Use a stationary parent with uniform scale. Resizing is anchored to the root's
+4. Use a parent with uniform scale. Maison can move and resize with its settled
+   contents attached. Resizing is anchored to the root's
    transform pivot; it preserves world position and rotation, not the bottom face
    of a mesh whose pivot is at its centre.
 
@@ -38,6 +44,47 @@ only one grab interactable on the object. Preserve its collider list, interactio
 layers, and event assignments when doing so. Existing project objects using
 `VRGrabObject` have already been migrated with their component references retained.
 
+## House contents
+
+`VRHouseInteractionLock` uses Maison's existing interior zones and hierarchy.
+It tracks original dynamic contents and adopts unheld objects using
+`VRHitPointGrabInteractable` when their pivots enter a zone. No extra component
+is needed on an item beyond its existing grab/resize setup. House roots are
+excluded. In overlapping houses, the current owner is retained while the item
+is inside; otherwise the containing house with the closest pivot owns it.
+
+- **Falling inside:** the item is parented to Maison with normal physics. It is
+  woken once on entry or release, including initial contents, so it can fall.
+- **Settled inside:** when `Rigidbody.IsSleeping()` becomes true, the item becomes
+  kinematic with interpolation disabled. Its local position, rotation, and scale
+  stay fixed, so moving, rotating, inverting, or resizing Maison carries it along.
+- **Temporarily paused:** if Maison is grabbed or resized while an item is still
+  falling, the item becomes kinematic until that manipulation finishes. It then
+  resumes falling from rest. It must settle before becoming permanently attached.
+- **Individually manipulated or outside:** grabbing or resizing an item releases
+  its house attachment and restores its physics before the interaction captures
+  that state. XRI finishes normal throwing before house ownership is reconsidered.
+  Outside items detach; releasing or bringing one inside adopts it again.
+
+Parent changes preserve world pose and size. Original contents reuse their
+existing parent when possible; newly adopted objects use the house root.
+Frozen items keep their colliders enabled for XR targeting. Only collision pairs
+between that item's Rigidbody and Maison's own Rigidbody are temporarily ignored,
+so frozen contents cannot push their house. Previously ignored pairs are left
+alone. Physics settings and pairs changed by this feature are restored on pickup,
+exit, disable, or destruction. Disabling the house lock leaves the hierarchy in
+place and restores the contents' physics; enabling it restarts fall/settle handling.
+
+Resize limits use the object's world scale at startup while scale changes are
+applied locally. Entering or leaving Maison therefore does not reset its size
+limits. Keep parents uniformly scaled to preserve proportions during reparenting.
+
+Maison in Gym Interaction has a 1,000 kg dynamic Rigidbody. Its animated door's
+collider is disabled directly in the Maison prefab and its unused Rigidbody is
+removed. `PorteVR` handles proximity opening without collision-filtering code.
+The door cannot push or block objects and cannot be targeted by XR rays.
+The house's floor and walls continue to collide normally with objects.
+
 ## Grab height limit
 
 Objects taller than the headset's current height above the XR Origin's floor
@@ -52,6 +99,28 @@ so shrinking an object to headset height or less makes it grabbable again.
 An already-held object stays held until grip release. A controller without an
 XR Origin, camera, or positive headset height cannot start a grab. This height
 check is independent of the fixed 2 m capsule used for player overlap protection.
+
+## Maison interior interaction lock
+
+`Assets/Environnement/Prefabs/Maison.prefab` has `VRHouseInteractionLock` on
+its root. The Maison instance in Gym Interaction already supplies the root
+grab and resize components; the lock finds those automatically. The prefab's
+door and geometry are preserved. HouseNoDoor has not been given this lock.
+
+When the headset enters any **Interior Volumes** zone, the house root's XR
+Interaction Layer Mask switches to **Default**, blocking grabbing and resizing.
+An active grab or resize ends on entry without throwing the house. Leaving all
+interior zones restores the original **grabbedAndScaled** mask and throwing.
+The existing headset-height restriction still applies when starting a grab.
+The outside mask is taken from the Inspector. Runtime grab setup preserves it,
+and the house switches it only when entering or leaving the interior.
+
+The four zones follow the stepped house footprint in the root's local space,
+so they move, rotate, and resize with the house. Select Maison to see their cyan
+outlines in the Scene view; adjust **Interior Volumes** on the lock component
+if the layout changes. The test uses headset position, so a controller reaching
+through a window alone does not count as entering the house. This changes XR
+interaction layers, not the GameObject physics layer.
 
 ## Controller setup
 
@@ -124,6 +193,100 @@ at the scene root. It is a 0.4 m cube at world position `(-0.75, 0.2, -20.97)`,
 on the ground in front of the XR Origin's starting pose. It uses the existing
 `M_Porte_Rouge` material and has both custom components already attached.
 
+## Target feedback, sounds, and wrist countdown
+
+The shared XR Origin uses **7.5-degree far cone casts** on both hands, increased
+from 6 degrees to make small objects easier to aim at. Reach remains 10 m;
+near detection, visible beam width, and interaction layers are unchanged.
+
+`VRObjectFeedback` is added automatically with `VRGrabObject`. Existing objects
+have been migrated. It gives hovered, held, or resize-locked objects a white
+**2-pixel outline**. Original materials and LOD distances are preserved; separate
+child interactables are excluded from their parent's outline. The outline uses
+depth testing and does not add colliders, shadows, or targeting surfaces.
+
+Select **Assets/Resources/VRFeedbackDefaults.asset** to adjust outline settings,
+clips, and volumes for all default objects. Assign your own Audio Clips to
+**Thud Clip**, **Grab Clip**, **Resize Loop Clip**, and **Timer Beep Clip**.
+The current clips in **Assets/Audio/VRFeedback/** are generated placeholders.
+For different feedback on one object, create another profile and assign it to
+that object's VR Object Feedback **Profile** field.
+
+The grab cue plays once on successful selection. A spatial resize loop plays
+only while size actually changes, stopping within 0.1 seconds when hands stop
+or a limit blocks resizing. Solid impacts produce spatial thuds above 0.35 m/s,
+with a 0.2-second per-object cooldown and volume increasing with impact speed.
+These object sounds use no Doppler effect and a 1–15 m distance range. The mask,
+shell, and clear material references belong to the outline effect; retain them
+when replacing audio clips.
+
+**Gym Interaction** contains an **Interaction Level Timer**, defaulting to
+**300 seconds**. It creates a 12 × 6 cm display above the left controller, with
+white `MM:SS` text on a dark background. It has no collider or UI raycaster and
+does not intercept targeting. Counting starts after an entry fade finishes.
+At **00:00**, the timer reserves the same transition guard used by the cubes,
+plays three 2D beeps 0.5 seconds apart, then fades to EmptyPlains. Other warp
+requests cannot interrupt that sequence. EmptyPlains has no countdown; grabbing
+its return cube reloads the level with a fresh **05:00** timer and reset puzzles.
+
+For a short manual check, temporarily set **Duration Seconds** to 3 before
+entering Play Mode, verify the beeps and fade, then restore the saved value to
+300. Check wrist readability, both-eye outlines, LOD changes, walls occluding
+outlines, impact cooldown, resize limits, and simultaneous timer/cube attempts
+with the headset. No test scripts are required.
+
+## Green cube warp
+
+Unlocking PorteRouge invokes `PadlockUnlock.onUnlocked` immediately, while the
+door begins opening. `DoorWarpSpawner.SpawnOnce()` creates one **Green Warp Cube**
+at the door's **Warp Cube Spawn Point**, initially local `(0, 0.2, -1.5)`.
+Edit that child transform to adjust its position. The shared door prefab and
+Gym Interaction's replacement padlock are both wired to the spawner.
+
+The cube uses `VRGrabObject` without two-hand resizing and the `grabbedAndScaled`
+interaction layer. Hold grip to pull it toward the controller. **Selecting it
+with a distant ray does not warp immediately.** `GreenCubeWarp` waits until the
+tracked controller position reaches the cube's solid collider, within the
+editable **Contact Tolerance** (default 1 cm). Releasing grip before contact
+cancels the approach and does not change scenes. Touch without a grab does nothing.
+
+After contact, hand selections are cancelled and the headset fades to black over
+**0.6 seconds**. `EmptyPlains` loads in Single mode while the view stays black,
+then fades back in over **0.6 seconds** once the new rig and return cube initialize.
+Adjust **Fade Out Duration** and **Fade In Duration** on the Green Warp Cube prefab.
+`XRSceneTransition` uses a camera-space UI overlay for both headset eyes and
+unscaled time. Its temporary runner survives the load, binds to the new camera,
+and removes itself after revealing the scene; it does not preserve the old rig.
+The plains contains a 500 m gray floor, sky, light, the shared XR Origin, one XR
+Interaction Manager, and one green return cube. The return cube is positioned
+on the floor two metres in front of the arriving headset. Each hand must release
+grip before it can select a cube after a warp, preventing an automatic round trip.
+
+The return cube's **Restart Level** mode reloads the departing scene. Player
+position, object poses, door/lock state, and puzzle progress start fresh. Only the
+scene path is retained. Launching EmptyPlains directly uses **Fallback Level**
+(Gym Interaction). Both destinations must be enabled in the build scene list;
+invalid routes log an error and leave the player in the current scene.
+
+Environnement remains the startup scene. Gym Interaction, Gym Perspective, and
+EmptyPlains are also enabled for scene loading. Each has a scene-owned XR
+Interaction Manager so unloading a level removes its manager with it.
+
+The **Complete XR Origin Set Up Variant** prefab owns the control settings and
+controller hints previously overridden in Gym Interaction: right-hand smooth
+turning, disabled 180-degree turn-around, teleport settings, disabled jump/climb,
+the Resize callouts, and the removed teleport hint. Gym Interaction keeps its
+spawn pose and name; EmptyPlains inherits the same controls from the prefab.
+
+Check the complete flow in Play Mode/headset: unlock and confirm exactly one
+cube appears; grab at a distance and release before contact; then hold until
+contact and confirm the warp. Repeat with either hand and hold grip during the
+load to verify no immediate return. Grab the return cube, confirm a fresh level,
+and repeat the full cycle. The plains must contain no previous level objects.
+Verify the fade covers both eyes through loading, restores the view on a failed
+load, and that movement, turning, grip/trigger bindings, and hints match after
+each trip. Check a direct Play launch of EmptyPlains as well.
+
 ## Manual checks
 
 In Play Mode with a headset or XR Interaction Simulator:
@@ -152,6 +315,26 @@ In Play Mode with a headset or XR Interaction Simulator:
    floor. Taller objects must be ungrabbable but still resizable; shrink them to
    headset height or less and grab again. Crouch and stand to confirm the cutoff
    updates. Also check rotated objects, scaled parents, and child colliders.
+8. Walk into Maison and confirm its root Interaction Layer Mask becomes Default
+   and grip/two-trigger resizing both stop. Leave through the doorway and confirm
+   grabbedAndScaled returns. Repeat after moving, rotating, or scaling the house;
+   check the exterior cutouts remain outside and that the door still works.
+9. Drop the key inside Maison: it must fall normally, sleep, and then become
+   kinematic with interpolation off. Shake, rotate, invert, and resize Maison;
+   settled contents must keep their local pose and scale proportionally. Inspect
+   initial contents too: they must get a chance to fall before settling.
+10. Grab or resize Maison while the key is still falling. Confirm the key pauses
+    relative to the house and resumes falling from rest after release. Repeat
+    with both grip and two-trigger resizing.
+11. Grab a settled key and throw it outside. Confirm normal gravity, throwing,
+    and house collisions return and the key stays independent when Maison moves.
+    Bring the red cube inside and release it: it must be adopted, fall, settle,
+    and follow the house. Repeat entry/exit and individual resizing, including
+    differently sized houses; reparenting must preserve world size and size limits.
+12. Disable/re-enable the house lock, item interactable, scaler, and whole objects
+    in each state. Confirm physics and collision exclusions are restored, later
+    interactions still work, and settled contents do not push the house. Test
+    overlapping houses if used: retain the current owner until exiting its zones.
 
 Headset interaction, visual placement, and throwing need interactive verification;
 a successful script compilation alone does not verify these behaviors.
