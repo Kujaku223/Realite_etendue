@@ -33,6 +33,7 @@ public sealed class VRHouseInteractionLock : MonoBehaviour
         public ContentState state;
         public bool frozen;
         public bool originalKinematic;
+        public float ownerScale;
         public RigidbodyInterpolation originalInterpolation;
         public Vector3 localPosition;
         public Quaternion localRotation;
@@ -349,6 +350,7 @@ public sealed class VRHouseInteractionLock : MonoBehaviour
     static void Adopt(HouseItem entry, VRHouseInteractionLock house)
     {
         entry.owner = house;
+        entry.ownerScale = house.transform.lossyScale.magnitude;
         entry.hasHouseHistory = true;
         if (entry.preferredParent == null || !entry.preferredParent.IsChildOf(house.transform))
             entry.preferredParent = entry.transform.parent != null && entry.transform.parent.IsChildOf(house.transform)
@@ -406,6 +408,10 @@ public sealed class VRHouseInteractionLock : MonoBehaviour
     {
         if (!entry.frozen || entry.transform == null || entry.body == null || entry.owner == null)
             return;
+        float ownerScale = entry.owner.transform.lossyScale.magnitude;
+        if (entry.scaler != null && entry.ownerScale > Mathf.Epsilon)
+            entry.scaler.ApplyInheritedScaleFactor(ownerScale / entry.ownerScale);
+        entry.ownerScale = ownerScale;
         entry.transform.SetLocalPositionAndRotation(entry.localPosition, entry.localRotation);
         entry.transform.localScale = entry.localScale;
         entry.body.position = entry.transform.position;

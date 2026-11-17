@@ -77,9 +77,11 @@ place and restores the contents' physics; enabling it restarts fall/settle handl
 
 Resize limits use the object's world scale at startup while scale changes are
 applied locally. Entering or leaving Maison therefore does not reset its size
-limits. Keep parents uniformly scaled to preserve proportions during reparenting.
+limits. When attached contents inherit Maison's resizing, their size-limit baseline
+follows that inherited change, so individually resizing them does not snap their
+size. Keep parents uniformly scaled to preserve proportions during reparenting.
 
-Maison in Gym Interaction has a 1,000 kg dynamic Rigidbody. Its animated door's
+The Maison prefab has a 1,000 kg dynamic Rigidbody. Its animated entrance door's
 collider is disabled directly in the Maison prefab and its unused Rigidbody is
 removed. `PorteVR` handles proximity opening without collision-filtering code.
 The door cannot push or block objects and cannot be targeted by XR rays.
@@ -103,9 +105,13 @@ check is independent of the fixed 2 m capsule used for player overlap protection
 ## Maison interior interaction lock
 
 `Assets/Environnement/Prefabs/Maison.prefab` has `VRHouseInteractionLock` on
-its root. The Maison instance in Gym Interaction already supplies the root
-grab and resize components; the lock finds those automatically. The prefab's
-door and geometry are preserved. HouseNoDoor has not been given this lock.
+its root, alongside its reusable grab/resize/feedback components and colliders.
+Environnement and fresh Maison instances inherit this setup. HouseNoDoor has not
+been given this lock.
+
+Environnement preserves the house's initial **0.1x** scale. Its instance uses a
+**Maximum Scale Multiplier of 20**, allowing the miniature to grow to human scale;
+the reusable component's ordinary default remains 4.
 
 When the headset enters any **Interior Volumes** zone, the house root's XR
 Interaction Layer Mask switches to **Default**, blocking grabbing and resizing.
@@ -220,7 +226,7 @@ These object sounds use no Doppler effect and a 1–15 m distance range. The mas
 shell, and clear material references belong to the outline effect; retain them
 when replacing audio clips.
 
-**Gym Interaction** contains an **Interaction Level Timer**, defaulting to
+**Environnement** contains an **Interaction Level Timer**, defaulting to
 **300 seconds**. It creates a 12 × 6 cm display above the left controller, with
 white `MM:SS` text on a dark background. It has no collider or UI raycaster and
 does not intercept targeting. Counting starts after an entry fade finishes.
@@ -262,15 +268,66 @@ Interaction Manager, and one green return cube. The return cube is positioned
 on the floor two metres in front of the arriving headset. Each hand must release
 grip before it can select a cube after a warp, preventing an automatic round trip.
 
-The return cube's **Restart Level** mode reloads the departing scene. Player
-position, object poses, door/lock state, and puzzle progress start fresh. Only the
-scene path is retained. Launching EmptyPlains directly uses **Fallback Level**
-(Gym Interaction). Both destinations must be enabled in the build scene list;
-invalid routes log an error and leave the player in the current scene.
+The return cube's **Restart Level** mode has **Return To Departing Scene** disabled
+in EmptyPlains, and **Fallback Level** is Environnement. It always starts a fresh
+Environnement, including after leaving a gym: player spawn, object poses,
+door/lock state, puzzles, and the five-minute timer reset. Other cubes retain the
+option to return to the remembered departing scene. Both destinations must be
+enabled in the build scene list; invalid routes leave the player in place.
 
-Environnement remains the startup scene. Gym Interaction, Gym Perspective, and
-EmptyPlains are also enabled for scene loading. Each has a scene-owned XR
+**EmptyPlains is the build startup scene**, followed by Environnement. Gym
+Interaction, Gym Perspective, and Gym Balances remain available. Each has a scene-owned XR
 Interaction Manager so unloading a level removes its manager with it.
+
+The plains uses Environnement's XR Origin spawn pose and contains a **Red Door
+Frame** prefab variant at the same world pose and scale as the level's red door.
+It contains only the base, posts, lintel, and solid colliders. There is no panel,
+padlock, door script, or countdown in the plains. The return cube remains two
+metres ahead of the arriving headset.
+
+## Maison puzzles
+
+Maison nests the latest **TablePlaques** setup from Gym Balances, with one manager,
+three plates, their assigned props, and the bathroom door. Correct targets remain
+10, 13, and 5, with the existing tolerances and hold times. Every plate notifies the
+manager on both solved and unsolved transitions, opening or relocking that door.
+The older Environnement scene-only manager and placeholder setup are removed.
+
+**Scale Affects Weight** makes each assigned prop's effective weight proportional
+to its resized volume, using its authored Rigidbody mass as the starting weight.
+The reference frame is Maison (or the table for standalone use), so resizing the
+whole house does not change the puzzle targets. This changes the measured puzzle
+weight without changing the house's Rigidbody mass.
+
+The complete **Cube à Perspective** puzzle is nested in the interior beside the
+table. Its viewing point is approximately 1.6 m above the floor at 1x house scale.
+The projector refreshes when its camera/ghost transforms change and caches its
+textures while stationary. Interior receiver-material variants preserve source
+materials. The spawned **CubeBleu** inherits the grab/resize/feedback setup and
+starts parented to Maison, then follows its normal contents/interaction rules.
+The projector uses **Renderer Index 1**, a dedicated **Projector Renderer** in both
+URP quality configurations. Its **Anamorphic Depth Capture** feature copies raw
+depth into a floating-point color texture with a depth attachment, avoiding the
+depth-only target conflict with XR Composition Layers. The headset stays on
+renderer 0. Projector rendering has XR, MSAA, and post-processing disabled.
+
+The active OpenXR configuration is **Assets/XR/Settings/OpenXRPackageSettings.asset**
+(without spaces), restoring the pre-merge project reference. It contains the
+configured Oculus Touch/Touch Plus controller profiles. The similarly named
+**OpenXR Package Settings.asset** has disabled controller profiles and is not the
+active configuration. Keep the existing shared rig input bindings.
+
+Maison receiver variants use the original **TexturePalie** shader with
+**Projection anamorphique** enabled. Texture tiling, tint/paling, masks, lighting,
+and double-sided wall culling remain intact. Original materials default this
+option off. If a capture fails, the projector hides its ghost and disables itself
+with one warning; re-enable it after correcting the renderer configuration.
+The balance dial/label quads have no Mesh Colliders; physical pads and trigger
+sensors retain their colliders, so decorative faces cannot cause concave-mesh
+errors under the dynamic house.
+Gym Perspective keeps its original standalone demonstration; its inherited
+Maison perspective puzzle is disabled there to avoid two projectors competing
+for the shared projection shader state.
 
 The **Complete XR Origin Set Up Variant** prefab owns the control settings and
 controller hints previously overridden in Gym Interaction: right-hand smooth

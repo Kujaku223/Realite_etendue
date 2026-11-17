@@ -40,6 +40,12 @@ public sealed class VRTwoHandScale : MonoBehaviour
 
     public bool isScaling { get; private set; }
 
+    internal void ApplyInheritedScaleFactor(float factor)
+    {
+        if (factor > 0f && !float.IsInfinity(factor) && !float.IsNaN(factor))
+            m_InitialWorldScale *= factor;
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetLock()
     {
@@ -51,8 +57,10 @@ public sealed class VRTwoHandScale : MonoBehaviour
         m_Grab = GetComponent<VRGrabObject>();
         m_Interactable = GetComponent<XRGrabInteractable>();
         m_Body = GetComponent<Rigidbody>();
-        m_InitialWorldScale = transform.lossyScale;
     }
+
+    // Spawners finish assigning parent/world size immediately after Instantiate.
+    void Start() => m_InitialWorldScale = transform.lossyScale;
 
     void OnDisable() => EndScale();
 

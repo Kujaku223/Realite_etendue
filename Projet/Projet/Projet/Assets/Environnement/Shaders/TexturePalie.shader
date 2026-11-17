@@ -10,6 +10,7 @@ Shader "Environnement/TexturePalie"
         _Masque ("Masque", 2D) = "white" {}
         _Seuil ("Seuil", Range(0, 1)) = 0
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
+        [Toggle] _AnamorphicProjection ("Projection anamorphique", Float) = 0
     }
     SubShader
     {
@@ -34,6 +35,7 @@ Shader "Environnement/TexturePalie"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "../../Shaders/AnamorphicProjection.hlsl"
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
@@ -47,6 +49,7 @@ Shader "Environnement/TexturePalie"
                 half _Palissement;
                 half _Desaturation;
                 half _Seuil;
+                half _AnamorphicProjection;
             CBUFFER_END
 
             struct Attributes
@@ -106,6 +109,14 @@ Shader "Environnement/TexturePalie"
                 surface.occlusion = 1;
                 surface.alpha = 1;
                 surface.normalTS = half3(0, 0, 1);
+
+                if (_AnamorphicProjection > 0.5h)
+                {
+                    float3 projectionColor;
+                    float projectionMask;
+                    AnamorphicProjection_float(input.positionWS, donnees.normalWS, projectionColor, projectionMask);
+                    surface.albedo = lerp(surface.albedo, projectionColor, saturate(projectionMask));
+                }
 
                 return UniversalFragmentPBR(donnees, surface);
             }
