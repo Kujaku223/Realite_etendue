@@ -70,6 +70,7 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
     {
         // Let the scene's input actions and tracked camera update before placement/arming.
         yield return null;
+        XRDoorwaySpawn.AlignScene(gameObject.scene);
         m_Hands = FindObjectsByType<XRBaseInputInteractor>(FindObjectsSortMode.None);
         if (!m_Initialized && m_Mode == WarpMode.RestartLevel)
         {

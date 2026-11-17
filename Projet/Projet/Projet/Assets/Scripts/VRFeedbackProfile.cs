@@ -5,7 +5,7 @@ using UnityEngine;
 public sealed class VRFeedbackProfile : ScriptableObject
 {
     [Header("Outline")]
-    public Color outlineColor = Color.white;
+    public Color outlineColor = new Color32(255, 176, 0, 255);
     [Range(0.5f, 5f)] public float outlineWidthPixels = 2f;
     public Material outlineMask;
     public Material outlineShell;
@@ -16,10 +16,12 @@ public sealed class VRFeedbackProfile : ScriptableObject
     public AudioClip grabClip;
     public AudioClip resizeLoopClip;
     public AudioClip timerBeepClip;
+    public AudioClip doorCreakClip;
     [Range(0f, 1f)] public float thudVolume = 0.6f;
     [Range(0f, 1f)] public float grabVolume = 0.35f;
     [Range(0f, 1f)] public float resizeVolume = 0.2f;
     [Range(0f, 1f)] public float timerBeepVolume = 0.4f;
+    [Range(0f, 1f)] public float doorCreakVolume = 0.35f;
     [Min(0f)] public float minimumImpactSpeed = 0.35f;
     [Min(0.01f)] public float fullVolumeImpactSpeed = 3f;
     [Min(0f)] public float impactCooldown = 0.2f;

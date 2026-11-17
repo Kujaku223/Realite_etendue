@@ -21,6 +21,7 @@ public sealed class PadlockUnlock : MonoBehaviour
     float m_CurrentAngle;
     bool m_Unlocked;
     bool m_DoorOpened;
+    AudioSource m_Creak;
 
     void Awake()
     {
@@ -63,11 +64,34 @@ public sealed class PadlockUnlock : MonoBehaviour
         m_Body.linearVelocity = Vector3.zero;
         m_Body.angularVelocity = Vector3.zero;
         m_Body.WakeUp();
+        VRDoorAudio.Play(ref m_Creak, m_DoorHinge.gameObject);
         onUnlocked.Invoke();
     }
 
     void FixedUpdate()
     {
+        // Held bodies deliberately have no physics contacts. Test their shapes
+        // directly so a held key can still touch this sensor without pushing it.
+        if (!m_Unlocked && m_DoorHinge != null && m_Sensor.enabled)
+        {
+            foreach (var held in VRHitPointGrabInteractable.HeldWithoutCollisions)
+            {
+                if (held == null || !held.CompareTag(m_KeyTag)) continue;
+                foreach (var collider in held.colliders)
+                {
+                    if (collider == null || !collider.enabled || collider.isTrigger ||
+                        !collider.gameObject.activeInHierarchy) continue;
+                    if (Physics.ComputePenetration(m_Sensor, m_Sensor.transform.position,
+                        m_Sensor.transform.rotation, collider, collider.transform.position,
+                        collider.transform.rotation, out _, out _))
+                    {
+                        TryUnlock(collider);
+                        break;
+                    }
+                }
+                if (m_Unlocked) break;
+            }
+        }
         if (!m_Unlocked || m_DoorOpened || m_DoorHinge == null)
             return;
 
@@ -78,6 +102,9 @@ public sealed class PadlockUnlock : MonoBehaviour
         m_DoorHinge.MoveRotation(parent != null ? parent.rotation * localRotation : localRotation);
         m_DoorOpened = Mathf.Approximately(m_CurrentAngle, m_OpenAngle);
     }
+
+    void OnDisable() => VRDoorAudio.Stop(m_Creak);
+    void OnDestroy() => VRDoorAudio.Release(m_Creak);
 
     void FitSensor()
     {
