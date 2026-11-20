@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9a9de3ae3ad52aba3fdc57b83d5f116, type: 3}
   m_Name: VRFeedbackDefaults
   m_EditorClassIdentifier: Assembly-CSharp::VRFeedbackProfile
-  outlineColor: {r: 1, g: 0.6901961, b: 0, a: 1}
+  outlineColor: {r: 0.05, g: 0.15, b: 0.65, a: 1}
   outlineWidthPixels: 2
   outlineMask: {fileID: 2100000, guid: 49ce54dff2645798b448e03887a43c89, type: 2}
   outlineShell: {fileID: 2100000, guid: 4b5fe929b3305414bd07a254a0a09549, type: 2}
