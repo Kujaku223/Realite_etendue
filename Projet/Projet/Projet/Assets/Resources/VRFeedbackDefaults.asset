@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9a9de3ae3ad52aba3fdc57b83d5f116, type: 3}
   m_Name: VRFeedbackDefaults
   m_EditorClassIdentifier: Assembly-CSharp::VRFeedbackProfile
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineColor: {r: 0.05, g: 0.15, b: 0.65, a: 1}
   outlineWidthPixels: 2
   outlineMask: {fileID: 2100000, guid: 49ce54dff2645798b448e03887a43c89, type: 2}
   outlineShell: {fileID: 2100000, guid: 4b5fe929b3305414bd07a254a0a09549, type: 2}
@@ -21,10 +21,12 @@ MonoBehaviour:
   grabClip: {fileID: 8300000, guid: 5da1ddb4e5bc54a9ab8f2b76d82cd105, type: 3}
   resizeLoopClip: {fileID: 8300000, guid: 817442562ecb5871a3ea1feb9751ee61, type: 3}
   timerBeepClip: {fileID: 8300000, guid: 1286e5f144ed51ee9bc10883cd3c1cc1, type: 3}
+  doorCreakClip: {fileID: 8300000, guid: 842589b16b194b1438b98cd99af2dd7e, type: 3}
   thudVolume: 0.6
   grabVolume: 0.35
   resizeVolume: 0.2
   timerBeepVolume: 0.4
+  doorCreakVolume: 0.35
   minimumImpactSpeed: 0.35
   fullVolumeImpactSpeed: 3
   impactCooldown: 0.2

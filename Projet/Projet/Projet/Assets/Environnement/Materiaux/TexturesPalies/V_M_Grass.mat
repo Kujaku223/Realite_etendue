@@ -107,6 +107,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AnamorphicProjection: 1
     - Boolean_783DA2B0: 1
     - Boolean_8513454bc71a446cac721247aa59b26d: 0
     - Boolean_D670D602: 1

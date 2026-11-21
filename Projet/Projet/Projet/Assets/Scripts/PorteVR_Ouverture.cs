@@ -1,72 +1,66 @@
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
-using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using Unity.XR.CoreUtils;
 
-[RequireComponent(typeof(XRSimpleInteractable))]
 public class PorteVR : MonoBehaviour
 {
     [SerializeField] float m_AngleOuvert = 90f;
     [SerializeField] float m_VitesseDegres = 140f;
-    [SerializeField] float m_DistanceOuverture = 3f;
-    [SerializeField] float m_DistanceFermeture = 4.5f;
+    [Header("Passage (dimensions dans le repere parent)")]
+    [SerializeField, Min(0.01f)] float m_LargeurPassage = 1.16f;
+    [SerializeField, Min(0.01f)] float m_HauteurPassage = 2.38f;
+    [SerializeField, Min(0f)] float m_MargePassage = 0.05f;
 
-    XRSimpleInteractable m_Interactable;
     Transform m_Repere;
     Quaternion m_RotationFermee;
-    Vector3 m_CentreLocal;
     float m_Angle;
-    bool m_Ouverte;
-    bool m_Proche;
+    bool m_EnMouvement;
+    float m_DerniereCible;
+    AudioSource m_Creak;
 
     void Awake()
     {
-        m_Interactable = GetComponent<XRSimpleInteractable>();
         m_Repere = transform.parent != null ? transform.parent : transform;
         m_RotationFermee = transform.localRotation;
-        m_CentreLocal = m_Repere.InverseTransformPoint(transform.position - transform.right * (0.58f * transform.lossyScale.x));
     }
 
-    void OnEnable() => m_Interactable.selectEntered.AddListener(_ => m_Ouverte = !m_Ouverte);
-
-    void OnDisable() => m_Interactable.selectEntered.RemoveAllListeners();
-
-    void Update()
+    void OnDisable()
     {
-        foreach (var interacteur in m_Interactable.interactorsHovering)
-        {
-            if (interacteur is XRBaseInputInteractor entree && entree.activateInput.ReadWasPerformedThisFrame())
-            {
-                m_Ouverte = !m_Ouverte;
-                break;
-            }
-        }
+        m_EnMouvement = false;
+        VRDoorAudio.Stop(m_Creak);
+    }
 
-        DetecterJoueur();
+    void OnDestroy() => VRDoorAudio.Release(m_Creak);
 
-        float cible = m_Ouverte ? m_AngleOuvert : 0f;
-        m_Angle = Mathf.MoveTowards(m_Angle, cible, m_VitesseDegres * Time.deltaTime);
+    void FixedUpdate()
+    {
+        // Player fit is the only opening condition, independent of distance or input.
+        float cible = PassageSuffisant() ? m_AngleOuvert : 0f;
+        bool mouvement = !Mathf.Approximately(m_Angle, cible);
+        if (mouvement && (!m_EnMouvement || !Mathf.Approximately(cible, m_DerniereCible)))
+            VRDoorAudio.Play(ref m_Creak, gameObject);
+        m_EnMouvement = mouvement;
+        m_DerniereCible = cible;
+        m_Angle = Mathf.MoveTowards(m_Angle, cible, m_VitesseDegres * Time.fixedDeltaTime);
         transform.localRotation = m_RotationFermee * Quaternion.Euler(0f, m_Angle, 0f);
     }
 
-    void DetecterJoueur()
+    bool PassageSuffisant()
     {
         Camera tete = Camera.main;
-        if (tete == null)
-            return;
-
-        Vector3 ecart = m_Repere.InverseTransformPoint(tete.transform.position) - m_CentreLocal;
-        ecart.y = 0f;
-        float distance = ecart.magnitude;
-
-        if (!m_Proche && distance < m_DistanceOuverture)
+        if (tete == null) return false;
+        var origine = tete.GetComponentInParent<XROrigin>();
+        if (origine == null) return false;
+        var corps = origine.GetComponentInChildren<CharacterController>();
+        float hauteur = Mathf.Max(0f, Vector3.Dot(tete.transform.position - origine.transform.position, Vector3.up));
+        float largeur = 0.3f;
+        if (corps != null)
         {
-            m_Proche = true;
-            m_Ouverte = true;
+            hauteur = Mathf.Max(hauteur, corps.height * Mathf.Abs(corps.transform.lossyScale.y));
+            largeur = 2f * corps.radius * Mathf.Max(Mathf.Abs(corps.transform.lossyScale.x),
+                Mathf.Abs(corps.transform.lossyScale.z));
         }
-        else if (m_Proche && distance > m_DistanceFermeture)
-        {
-            m_Proche = false;
-            m_Ouverte = false;
-        }
+        float hauteurPorte = m_HauteurPassage * m_Repere.TransformVector(Vector3.up).magnitude;
+        float largeurPorte = m_LargeurPassage * m_Repere.TransformVector(Vector3.right).magnitude;
+        return hauteurPorte >= hauteur + m_MargePassage && largeurPorte >= largeur + m_MargePassage;
     }
 }

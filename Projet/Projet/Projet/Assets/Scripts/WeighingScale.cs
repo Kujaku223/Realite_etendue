@@ -11,6 +11,7 @@ public class WeighingScale : MonoBehaviour
     [SerializeField] float tolerance = 0.5f;    // +/- allowed error
     [SerializeField] float holdTime = 1f;       // must stay correct this long
     [SerializeField] float exitGraceTime = 0.25f; // ignore trigger exits shorter than this (stops flicker)
+    [SerializeField] bool scaleAffectsWeight = true;
 
     [Header("Feedback")]
     [SerializeField] Renderer indicator;        // lamp / pad surface
@@ -35,11 +36,14 @@ public class WeighingScale : MonoBehaviour
 
     [Header("Events")]
     public UnityEvent onSolved;
+    public UnityEvent onUnsolved;
     public UnityEvent<GameObject> onWrongObject; // fires when a different object lands on the pad
     public UnityEvent<float> onWeightChanged;    // hook up a UI text here
     public bool IsSolved => solved;              // used to compare states of the 3 scales
 
     Rigidbody requiredBody;
+    Transform weightReferenceFrame;
+    float initialRelativeVolume;
     bool onPad;
     int overlaps;                                // colliders of the required object inside the trigger
     float exitTime = -999f;
@@ -51,13 +55,28 @@ public class WeighingScale : MonoBehaviour
     Vector3 padBaseScale;
     Vector3 padBasePos;
 
-    // Override this if your project stores weight somewhere other than Rigidbody.mass
-    float GetWeight() => requiredBody != null ? requiredBody.mass : 0f;
+    float RelativeVolume()
+    {
+        float volume = Mathf.Abs(requiredObject.transform.localToWorldMatrix.determinant);
+        float frameVolume = weightReferenceFrame != null ?
+            Mathf.Abs(weightReferenceFrame.localToWorldMatrix.determinant) : 1f;
+        return volume / Mathf.Max(1e-12f, frameVolume);
+    }
+
+    // Authored Rigidbody.mass is the weight at the authored size. Measure in
+    // house space so resizing Maison itself does not change its puzzle targets.
+    float GetWeight() => requiredBody == null ? 0f : requiredBody.mass *
+        (scaleAffectsWeight && initialRelativeVolume > 0f ? RelativeVolume() / initialRelativeVolume : 1f);
 
     void Awake()
     {
         if (requiredObject != null)
+        {
             requiredBody = requiredObject.GetComponentInChildren<Rigidbody>();
+            var house = GetComponentInParent<VRHouseInteractionLock>();
+            weightReferenceFrame = house != null ? house.transform : transform.root;
+            initialRelativeVolume = RelativeVolume();
+        }
 
         if (pad != null)
         {
@@ -149,7 +168,11 @@ public class WeighingScale : MonoBehaviour
         }
 
         // ---- Solved logic ----
-        if (solved && !isCorrect) solved = false;
+        if (solved && !isCorrect)
+        {
+            solved = false;
+            onUnsolved?.Invoke();
+        }
 
         correctTimer = isCorrect ? correctTimer + Time.deltaTime : 0f;
         if (!solved && correctTimer >= holdTime)

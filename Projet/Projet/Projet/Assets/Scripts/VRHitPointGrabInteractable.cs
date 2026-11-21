@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -9,6 +10,13 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 public sealed class VRHitPointGrabInteractable : XRGrabInteractable
 {
     bool m_FinishHouseRelease;
+    Rigidbody m_CollisionBody;
+    bool m_CollisionsSuspended;
+    bool m_PreviousDetectCollisions;
+    internal static readonly HashSet<VRHitPointGrabInteractable> HeldWithoutCollisions = new();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetHeldObjects() => HeldWithoutCollisions.Clear();
 
     protected override void OnEnable()
     {
@@ -25,6 +33,7 @@ public sealed class VRHitPointGrabInteractable : XRGrabInteractable
     protected override void OnDisable()
     {
         base.OnDisable();
+        RestoreCollisions();
         m_FinishHouseRelease = false;
         VRHouseInteractionLock.UnregisterItem(this);
     }
@@ -35,6 +44,15 @@ public sealed class VRHitPointGrabInteractable : XRGrabInteractable
         m_FinishHouseRelease = false;
         VRHouseInteractionLock.PrepareForInteraction(this);
         base.OnSelectEntering(args);
+        // Initialize the ray-hit anchor first, then suppress contacts throughout
+        // both the approach and the held phase. Collider components stay enabled.
+        if (!m_CollisionsSuspended && TryGetComponent(out m_CollisionBody))
+        {
+            m_PreviousDetectCollisions = m_CollisionBody.detectCollisions;
+            m_CollisionsSuspended = true;
+            m_CollisionBody.detectCollisions = false;
+            HeldWithoutCollisions.Add(this);
+        }
     }
 
     protected override void OnSelectExiting(SelectExitEventArgs args)
@@ -59,10 +77,19 @@ public sealed class VRHitPointGrabInteractable : XRGrabInteractable
         if (m_FinishHouseRelease && !isSelected)
         {
             m_FinishHouseRelease = false;
+            RestoreCollisions();
             VRHouseInteractionLock.FinishInteraction(this);
         }
         if (TryGetComponent<VRHouseInteractionLock>(out var house))
             house.SyncFrozenContents();
+    }
+
+    void RestoreCollisions()
+    {
+        if (m_CollisionsSuspended && m_CollisionBody != null)
+            m_CollisionBody.detectCollisions = m_PreviousDetectCollisions;
+        m_CollisionsSuspended = false;
+        HeldWithoutCollisions.Remove(this);
     }
 
     protected override void Reset()

@@ -17,7 +17,9 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
 
     [SerializeField] WarpMode m_Mode;
     [SerializeField] string m_PlainsScene = "Assets/Scenes/EmptyPlains.unity";
-    [SerializeField] string m_FallbackLevel = "Assets/Scenes/Gyms/Gym Interaction.unity";
+    [SerializeField] string m_FallbackLevel = "Assets/Scenes/Environnement.unity";
+    [SerializeField, Tooltip("Return to the departing scene. Disable to always load Fallback Level.")]
+    bool m_ReturnToDepartingScene = true;
     [SerializeField, Min(0f)] float m_ContactTolerance = 0.01f;
     [SerializeField, Min(0f)] float m_FadeOutDuration = 0.6f;
     [SerializeField, Min(0f)] float m_FadeInDuration = 0.6f;
@@ -68,6 +70,7 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
     {
         // Let the scene's input actions and tracked camera update before placement/arming.
         yield return null;
+        XRDoorwaySpawn.AlignScene(gameObject.scene);
         m_Hands = FindObjectsByType<XRBaseInputInteractor>(FindObjectsSortMode.None);
         if (!m_Initialized && m_Mode == WarpMode.RestartLevel)
         {
@@ -141,7 +144,7 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
 
         string level = gameObject.scene.path;
         string destination = m_Mode == WarpMode.ToPlains ? m_PlainsScene :
-            (string.IsNullOrEmpty(s_LevelScene) ? m_FallbackLevel : s_LevelScene);
+            (m_ReturnToDepartingScene && !string.IsNullOrEmpty(s_LevelScene) ? s_LevelScene : m_FallbackLevel);
         if (string.IsNullOrEmpty(destination) || !Application.CanStreamedLevelBeLoaded(destination) ||
             (m_Mode == WarpMode.ToPlains && (string.IsNullOrEmpty(level) || !Application.CanStreamedLevelBeLoaded(level))))
         {

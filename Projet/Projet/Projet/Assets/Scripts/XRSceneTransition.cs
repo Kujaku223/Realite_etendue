@@ -10,6 +10,7 @@ public sealed class XRSceneTransition : MonoBehaviour
     static XRSceneTransition s_Active;
     Canvas m_Canvas;
     CanvasGroup m_Group;
+    RectTransform m_Hourglass;
     Action<bool> m_Finished;
     public static bool IsTransitioning => s_Active != null;
 
@@ -74,7 +75,27 @@ public sealed class XRSceneTransition : MonoBehaviour
         var image = imageObject.GetComponent<Image>();
         image.color = Color.black;
         image.raycastTarget = false;
+        var iconObject = new GameObject("Loading Hourglass", typeof(RectTransform), typeof(Image));
+        iconObject.transform.SetParent(canvasObject.transform, false);
+        m_Hourglass = iconObject.GetComponent<RectTransform>();
+        m_Hourglass.anchorMin = m_Hourglass.anchorMax = new Vector2(0.5f, 0.5f);
+        m_Hourglass.sizeDelta = new Vector2(48f, 48f);
+        var icon = iconObject.GetComponent<Image>();
+        icon.sprite = Resources.Load<Sprite>("LoadingHourglass");
+        icon.preserveAspect = true;
+        icon.raycastTarget = false;
+        iconObject.SetActive(false);
         BindCamera();
+    }
+
+    void Update()
+    {
+        if (m_Hourglass != null && m_Hourglass.gameObject.activeSelf)
+        {
+            // A gentle pulse keeps the loading indicator alive in both eyes.
+            float scale = 1f + 0.08f * Mathf.Sin(Time.unscaledTime * 4f);
+            m_Hourglass.localScale = Vector3.one * scale;
+        }
     }
 
     void BindCamera()
@@ -103,6 +124,8 @@ public sealed class XRSceneTransition : MonoBehaviour
             }
         }
         yield return Fade(1f, fadeOut);
+        m_Hourglass.gameObject.SetActive(true);
+        float loadingShownAt = Time.realtimeSinceStartup;
         // Present a completely black frame before any scene loading begins.
         yield return null;
 
@@ -123,6 +146,7 @@ public sealed class XRSceneTransition : MonoBehaviour
             // The new rig/input actions and return-cube placement initialize
             // under black before the view is revealed.
             yield return null;
+            XRDoorwaySpawn.AlignScene(SceneManager.GetActiveScene());
             BindCamera();
             yield return null;
             loaded = SceneManager.GetActiveScene().path == scenePath;
@@ -130,6 +154,8 @@ public sealed class XRSceneTransition : MonoBehaviour
                 Debug.LogError("XRSceneTransition did not arrive in the requested scene: " + scenePath);
         }
 
+        float remaining = 0.35f - (Time.realtimeSinceStartup - loadingShownAt);
+        if (remaining > 0f) yield return new WaitForSecondsRealtime(remaining);
         yield return Fade(0f, fadeIn);
         Action<bool> finished = m_Finished;
         m_Finished = null;

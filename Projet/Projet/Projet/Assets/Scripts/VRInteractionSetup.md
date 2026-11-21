@@ -77,13 +77,17 @@ place and restores the contents' physics; enabling it restarts fall/settle handl
 
 Resize limits use the object's world scale at startup while scale changes are
 applied locally. Entering or leaving Maison therefore does not reset its size
-limits. Keep parents uniformly scaled to preserve proportions during reparenting.
+limits. When attached contents inherit Maison's resizing, their size-limit baseline
+follows that inherited change, so individually resizing them does not snap their
+size. Keep parents uniformly scaled to preserve proportions during reparenting.
 
-Maison in Gym Interaction has a 1,000 kg dynamic Rigidbody. Its animated door's
-collider is disabled directly in the Maison prefab and its unused Rigidbody is
-removed. `PorteVR` handles proximity opening without collision-filtering code.
-The door cannot push or block objects and cannot be targeted by XR rays.
-The house's floor and walls continue to collide normally with objects.
+The Maison prefab has a 1,000 kg dynamic Rigidbody. Its entrance and bathroom
+doors use enabled, convex, non-trigger panel colliders attached to the existing
+house Rigidbody, without additional door bodies. Their animations update in
+FixedUpdate so visible panels and collision shapes move together. `PorteVR`
+opens the exterior door automatically when the player fits, regardless of distance.
+The bathroom door retains its balance-puzzle lock. Held-house collision suppression
+also covers these panels because they belong to Maison's Rigidbody.
 
 ## Grab height limit
 
@@ -103,9 +107,13 @@ check is independent of the fixed 2 m capsule used for player overlap protection
 ## Maison interior interaction lock
 
 `Assets/Environnement/Prefabs/Maison.prefab` has `VRHouseInteractionLock` on
-its root. The Maison instance in Gym Interaction already supplies the root
-grab and resize components; the lock finds those automatically. The prefab's
-door and geometry are preserved. HouseNoDoor has not been given this lock.
+its root, alongside its reusable grab/resize/feedback components and colliders.
+Environnement and fresh Maison instances inherit this setup. HouseNoDoor has not
+been given this lock.
+
+Environnement preserves the house's initial **0.1x** scale. Its instance uses a
+**Maximum Scale Multiplier of 20**, allowing the miniature to grow to human scale;
+the reusable component's ordinary default remains 4.
 
 When the headset enters any **Interior Volumes** zone, the house root's XR
 Interaction Layer Mask switches to **Default**, blocking grabbing and resizing.
@@ -197,10 +205,14 @@ on the ground in front of the XR Origin's starting pose. It uses the existing
 
 The shared XR Origin uses **7.5-degree far cone casts** on both hands, increased
 from 6 degrees to make small objects easier to aim at. Reach remains 10 m;
-near detection, visible beam width, and interaction layers are unchanged.
+near detection radius, visible beam width, and interaction layers are unchanged.
+Both near-overlap and far-cast physics masks include **HouseFurniture**, in
+addition to their existing layers. This is distinct from the grabbedAndScaled
+XR interaction layer. Both controller rays use **#FFB000** in idle, hover,
+selection, and UI states, preserving their existing transparency gradients.
 
 `VRObjectFeedback` is added automatically with `VRGrabObject`. Existing objects
-have been migrated. It gives hovered, held, or resize-locked objects a white
+have been migrated. It gives hovered, held, or resize-locked objects an amber (#FFB000)
 **2-pixel outline**. Original materials and LOD distances are preserved; separate
 child interactables are excluded from their parent's outline. The outline uses
 depth testing and does not add colliders, shadows, or targeting surfaces.
@@ -220,7 +232,7 @@ These object sounds use no Doppler effect and a 1–15 m distance range. The mas
 shell, and clear material references belong to the outline effect; retain them
 when replacing audio clips.
 
-**Gym Interaction** contains an **Interaction Level Timer**, defaulting to
+**Environnement** contains an **Interaction Level Timer**, defaulting to
 **300 seconds**. It creates a 12 × 6 cm display above the left controller, with
 white `MM:SS` text on a dark background. It has no collider or UI raycaster and
 does not intercept targeting. Counting starts after an entry fade finishes.
@@ -262,15 +274,66 @@ Interaction Manager, and one green return cube. The return cube is positioned
 on the floor two metres in front of the arriving headset. Each hand must release
 grip before it can select a cube after a warp, preventing an automatic round trip.
 
-The return cube's **Restart Level** mode reloads the departing scene. Player
-position, object poses, door/lock state, and puzzle progress start fresh. Only the
-scene path is retained. Launching EmptyPlains directly uses **Fallback Level**
-(Gym Interaction). Both destinations must be enabled in the build scene list;
-invalid routes log an error and leave the player in the current scene.
+The return cube's **Restart Level** mode has **Return To Departing Scene** disabled
+in EmptyPlains, and **Fallback Level** is Environnement. It always starts a fresh
+Environnement, including after leaving a gym: player spawn, object poses,
+door/lock state, puzzles, and the five-minute timer reset. Other cubes retain the
+option to return to the remembered departing scene. Both destinations must be
+enabled in the build scene list; invalid routes leave the player in place.
 
-Environnement remains the startup scene. Gym Interaction, Gym Perspective, and
-EmptyPlains are also enabled for scene loading. Each has a scene-owned XR
+**EmptyPlains is the build startup scene**, followed by Environnement. Gym
+Interaction, Gym Perspective, and Gym Balances remain available. Each has a scene-owned XR
 Interaction Manager so unloading a level removes its manager with it.
+
+The plains uses Environnement's XR Origin spawn pose and contains a **Red Door
+Frame** prefab variant at the same world pose and scale as the level's red door.
+It contains only the base, posts, lintel, and solid colliders. There is no panel,
+padlock, door script, or countdown in the plains. The return cube remains two
+metres ahead of the arriving headset.
+
+## Maison puzzles
+
+Maison nests the latest **TablePlaques** setup from Gym Balances, with one manager,
+three plates, their assigned props, and the bathroom door. Correct targets remain
+10, 13, and 5, with the existing tolerances and hold times. Every plate notifies the
+manager on both solved and unsolved transitions, opening or relocking that door.
+The older Environnement scene-only manager and placeholder setup are removed.
+
+**Scale Affects Weight** makes each assigned prop's effective weight proportional
+to its resized volume, using its authored Rigidbody mass as the starting weight.
+The reference frame is Maison (or the table for standalone use), so resizing the
+whole house does not change the puzzle targets. This changes the measured puzzle
+weight without changing the house's Rigidbody mass.
+
+The complete **Cube à Perspective** puzzle is nested in the interior beside the
+table. Its viewing point is approximately 1.6 m above the floor at 1x house scale.
+The projector refreshes when its camera/ghost transforms change and caches its
+textures while stationary. Interior receiver-material variants preserve source
+materials. The spawned **CubeBleu** inherits the grab/resize/feedback setup and
+starts parented to Maison, then follows its normal contents/interaction rules.
+The projector uses **Renderer Index 1**, a dedicated **Projector Renderer** in both
+URP quality configurations. Its **Anamorphic Depth Capture** feature copies raw
+depth into a floating-point color texture with a depth attachment, avoiding the
+depth-only target conflict with XR Composition Layers. The headset stays on
+renderer 0. Projector rendering has XR, MSAA, and post-processing disabled.
+
+The active OpenXR configuration is **Assets/XR/Settings/OpenXRPackageSettings.asset**
+(without spaces), restoring the pre-merge project reference. It contains the
+configured Oculus Touch/Touch Plus controller profiles. The similarly named
+**OpenXR Package Settings.asset** has disabled controller profiles and is not the
+active configuration. Keep the existing shared rig input bindings.
+
+Maison receiver variants use the original **TexturePalie** shader with
+**Projection anamorphique** enabled. Texture tiling, tint/paling, masks, lighting,
+and double-sided wall culling remain intact. Original materials default this
+option off. If a capture fails, the projector hides its ghost and disables itself
+with one warning; re-enable it after correcting the renderer configuration.
+The balance dial/label quads have no Mesh Colliders; physical pads and trigger
+sensors retain their colliders, so decorative faces cannot cause concave-mesh
+errors under the dynamic house.
+Gym Perspective keeps its original standalone demonstration; its inherited
+Maison perspective puzzle is disabled there to avoid two projectors competing
+for the shared projection shader state.
 
 The **Complete XR Origin Set Up Variant** prefab owns the control settings and
 controller hints previously overridden in Gym Interaction: right-hand smooth
@@ -288,6 +351,116 @@ load, and that movement, turning, grip/trigger bindings, and hints match after
 each trip. Check a direct Play launch of EmptyPlains as well.
 
 ## Manual checks
+
+### Doorways, walking, and loading
+
+- Environnement and EmptyPlains have a **Player Spawn** anchor under the red
+  doorway/frame. `XRDoorwaySpawn` aligns the tracked headset horizontally and
+  faces it toward the frame once on arrival, preserving the player's real height.
+  The rig's saved spawn matches this anchor. The plains return cube is placed
+  two metres ahead after alignment. Moving the anchor changes the arrival view.
+- The shared XR Origin's Character Controller has **Step Offset = 0**. Ordinary
+  Maison furniture uses the **HouseFurniture** physics layer (9), ignored only
+  by the player's **Ignore Raycast** physics layer (2). Props still collide with
+  furniture and XR rays still target it. Floors, carpets, structural walls, and
+  the balance table retain player collision. The table blocks walking without
+  automatic stepping onto its top; jump and climb remain disabled.
+- Maison's **Entrance Walkway** contains two invisible convex ramps and a solid
+  threshold bridge. They join the outside landing to the house floor with no
+  vertical collision lip and follow the house's transform. Ramp slopes are at
+  most 20 degrees at uniform scale. They add no renderers or runtime scripts.
+- Maison's exterior `PorteVR` opens only if its scaled passage fits both the
+  tracked headset/body height and controller-body width, with 5 cm clearance.
+  **Largeur Passage** and **Hauteur Passage** are parent-local opening dimensions;
+  the prefab uses the measured clear space between the frame and walkway.
+  Growing the house sufficiently opens it from any distance; it remains open
+  until the player no longer fits. Proximity and controller inputs do not toggle it.
+- Grabbing disables the held Rigidbody's **Detect Collisions** immediately after
+  the grab anchor is initialized, including the pull toward the hand. The saved
+  flag returns after XRI finishes its release/throw, or on interactable disable.
+  Collider components stay enabled for geometric targeting. The padlock checks
+  held key shapes explicitly so unlocking still works without physical contacts.
+- Exterior, bathroom, and red padlock doors use the shared profile's **Door Creak
+  Clip** and **Door Creak Volume**. Replace `DoorCreak_Placeholder.wav` or assign
+  another clip in `Resources/VRFeedbackDefaults`; audio is spatial, without Doppler.
+- The shared scene fade shows `Resources/LoadingHourglass.png` centered on black
+  in both directions, for at least 0.35 seconds before fading into the new scene.
+  It does not intercept UI or targeting.
+
+Check both arrivals while physically offset/turned in the tracking space. Walk
+through chairs, sofas, and cabinets; confirm the balance table blocks walking
+and furniture cannot support the player. Resize Maison below/above doorway fit,
+check held-key unlocking, throw after release, and listen for each door's creak.
+Confirm the hourglass appears in both eyes on both trips.
+
+Files for the previous doorway/loading update (24 paths, including four new `.meta` files):
+
+- Scenes: `Assets/Scenes/Environnement.unity` and `Assets/Scenes/EmptyPlains.unity`.
+  Both rigs now start at `(-1.6992354, 0.02, -20.214226)`, yaw `154` degrees,
+  with a scene-owned Player Spawn anchor and XRDoorwaySpawn component. EmptyPlains'
+  saved return cube moved to `(-0.8224932, 0.2, -22.011814)`. Frame poses are unchanged.
+- Shared prefabs: `Assets/Environnement/Prefabs/Maison.prefab` (612 furniture/prop
+  GameObjects assigned layer 9; exterior passage measured at 1.164103 by 2.601978
+  parent-local metres), `Assets/Perspective/CubeBleu.prefab` (physics layer 9), and
+  `Assets/VRTemplateAssets/Prefabs/Setup/Complete XR Origin Set Up Variant.prefab`
+  (only the Character Controller Step Offset override added).
+- Physics configuration: `ProjectSettings/TagManager.asset` (HouseFurniture at 9)
+  and `ProjectSettings/DynamicsManager.asset` (only the 2/9 collision pair changed).
+- Updated scripts: `GreenCubeWarp.cs`, `PadlockUnlock.cs`, `PorteVR_Ouverture.cs`,
+  `PorteVR_Balances.cs`, `VRHitPointGrabInteractable.cs`, `VRFeedbackProfile.cs`,
+  and `XRSceneTransition.cs`, all under `Assets/Scripts`, plus this setup guide.
+- New scripts: `Assets/Scripts/XRDoorwaySpawn.cs` and `Assets/Scripts/VRDoorAudio.cs`,
+  each with its `.meta`.
+- Feedback: `Assets/Resources/VRFeedbackDefaults.asset`,
+  `Assets/Audio/VRFeedback/DoorCreak_Placeholder.wav` and its `.meta`, and
+  `Assets/Resources/LoadingHourglass.png` and its `.meta`.
+
+Validation: Unity import/compilation and saved-reference inspection passed. A
+graphics-enabled Environnement Play Mode startup produced no gameplay or Render
+Graph exceptions. This does not verify headset input, stereo appearance, walking,
+contact behavior, or audible playback. No test scripts are included.
+
+### Targeting, solid-door, and threshold repair
+
+This repair changes ten paths, including the new mesh asset's `.meta`:
+
+- `Assets/VRTemplateAssets/Prefabs/Setup/Complete XR Origin Set Up Variant.prefab`:
+  both near masks add layer 9 (`0x201`); both far masks add it while preserving
+  their other bits (`0x80000221`). All five ray-state gradients use #FFB000;
+  their transparency, widths, 10 m reach, 7.5-degree targeting, input actions,
+  grabbedAndScaled interaction filter, and zero Step Offset are preserved.
+- `Assets/Resources/VRFeedbackDefaults.asset` and `Assets/Scripts/VRFeedbackProfile.cs`:
+  shared and new-profile outlines default to #FFB000; width stays at 2 pixels.
+- `Assets/Environnement/Prefabs/TablePlaques.prefab`: enable the existing convex,
+  non-trigger bathroom door panel collider. The Maison instance inherits this.
+- `Assets/Environnement/Prefabs/Maison.prefab`: enable the exterior panel collider
+  and add Entrance Walkway with exterior/interior convex ramps and a solid bridge,
+  without renderers, extra Rigidbodies, or runtime components. Walkway width is
+  1.116168 m at 1x scale. Its base stays at the existing floor bottom (-0.15 m),
+  crest is 0.052 m, exterior run is 0.569496 m, and interior run is 0.3 m. The
+  measured clear opening becomes 1.156168 by 2.559427 parent-local metres.
+- `Assets/Environnement/Meshes/House Entrance Ramps.asset` and its `.meta`:
+  the two authored collision-only ramp meshes, each with eight vertices.
+- `Assets/Scripts/PorteVR_Ouverture.cs`: automatic size-only opening in FixedUpdate;
+  no proximity condition or manual toggle. Keep 5 cm clearance and creak audio.
+- `Assets/Scripts/PorteVR_Balances.cs`: retain input/event puzzle logic and move
+  only panel animation to FixedUpdate. The red door's existing solid panel and
+  padlock logic remain unchanged.
+- `Assets/Scripts/VRInteractionSetup.md`: these setup notes and validation steps.
+
+No scene file is directly edited by this repair. Environnement, EmptyPlains, and
+the gyms inherit their shared prefab changes; existing scene overrides remain.
+In the headset, check near/far grabs and resizing with both hands, repeat releases
+and re-entry, walk across the entrance in both directions at several house scales,
+and confirm each closed door blocks the player. Grow/shrink Maison while far away
+to check size-only opening. Check amber feedback in both eyes. Compilation and
+saved-reference checks do not verify those interactive behaviors.
+
+Repair validation passed: Unity compilation and saved-reference inspection;
+closed ramp geometry with slopes of 19.3507 and 0.382 degrees; graphics-enabled
+Play Mode startup in EmptyPlains and Environnement without gameplay, collider
+cooking, or Render Graph errors. Headset input, door blocking, walking, and
+stereo color/outline appearance still require the manual checks above.
 
 In Play Mode with a headset or XR Interaction Simulator:
 
