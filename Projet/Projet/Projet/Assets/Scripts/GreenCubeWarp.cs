@@ -23,6 +23,10 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
     [SerializeField, Min(0f)] float m_ContactTolerance = 0.01f;
     [SerializeField, Min(0f)] float m_FadeOutDuration = 0.6f;
     [SerializeField, Min(0f)] float m_FadeInDuration = 0.6f;
+    [SerializeField, Tooltip("Optional. This cube can still be grabbed while learning, but cannot warp until the tutorial is complete.")]
+    EmptyPlainsTutorial m_Tutorial;
+    bool m_GrabbedAfterTutorial;
+    bool TutorialAllowsWarp => m_Tutorial == null || (m_Tutorial.IsComplete && m_GrabbedAfterTutorial);
 
     // Only routing information survives a scene change, never level state or poses.
     static string s_LevelScene;
@@ -129,17 +133,24 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
             hand.handedness == InteractorHandedness.Right && m_RightReady;
     }
 
-    void OnGrabbed(SelectEnterEventArgs args) => m_SelectedHand = args.interactorObject as XRBaseInputInteractor;
+    void OnGrabbed(SelectEnterEventArgs args)
+    {
+        m_SelectedHand = args.interactorObject as XRBaseInputInteractor;
+        m_GrabbedAfterTutorial = m_Tutorial != null && m_Tutorial.IsComplete;
+    }
 
     void OnReleased(SelectExitEventArgs args)
     {
         if (args.interactorObject as XRBaseInputInteractor == m_SelectedHand)
+        {
             m_SelectedHand = null;
+            m_GrabbedAfterTutorial = false;
+        }
     }
 
     void LateUpdate()
     {
-        if (IsTransitioning || !IsHeldAtController())
+        if (IsTransitioning || !TutorialAllowsWarp || !IsHeldAtController())
             return;
 
         string level = gameObject.scene.path;
@@ -181,7 +192,7 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
     IEnumerator Warp(string destination, string level)
     {
         yield return new WaitForEndOfFrame();
-        if (!IsHeldAtController())
+        if (!TutorialAllowsWarp || !IsHeldAtController())
         {
             s_Loading = false;
             m_OwnsTransition = false;
