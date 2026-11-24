@@ -8941,6 +8941,11 @@ CapsuleCollider:
   m_Height: 5.059112
   m_Direction: 1
   m_Center: {x: 0, y: 2.529556, z: 0}
+--- !u!1 &1591009199 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 205615880312653363, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
+  m_PrefabInstance: {fileID: 3490855502674084206}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1591170143
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11173,15 +11178,15 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 85c8b9797ae42924185c043747ca946b, type: 3}
---- !u!1 &1978371877 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 833832197186995429, guid: 85c8b9797ae42924185c043747ca946b, type: 3}
-  m_PrefabInstance: {fileID: 1978371876}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1978371878 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 834659618774530050, guid: 85c8b9797ae42924185c043747ca946b, type: 3}
   m_PrefabInstance: {fileID: 1978371876}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2003728444 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5356664659493269698, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
+  m_PrefabInstance: {fileID: 3490855502674084206}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2004006037
 PrefabInstance:
@@ -12132,15 +12137,15 @@ PrefabInstance:
       objectReference: {fileID: 155817692}
     - target: {fileID: 3093941467927988061, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3093941467927988061, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3093941467927988061, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3093941467927988061, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -12197,7 +12202,7 @@ PrefabInstance:
     - target: {fileID: 3410845679724659588, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       propertyPath: requiredObject
       value: 
-      objectReference: {fileID: 1978371877}
+      objectReference: {fileID: 2003728444}
     - target: {fileID: 3740844612557175535, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -12226,6 +12231,14 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 2.522
       objectReference: {fileID: 0}
+    - target: {fileID: 4288796162120132996, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f68be5ff7e6196148897c560ac328a93, type: 2}
+    - target: {fileID: 5622293405662683601, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
+      propertyPath: m_Mass
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 5739502973276711121, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -12250,6 +12263,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Red Interaction Cube (Placeholder3)
       objectReference: {fileID: 0}
+    - target: {fileID: 6422711979949734205, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
+      propertyPath: requiredObject
+      value: 
+      objectReference: {fileID: 1591009199}
     - target: {fileID: 6615400593190988153, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -12277,6 +12294,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 3958090690096559156, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
+    - {fileID: 3894160264428930405, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 5292704257004724656, guid: cb9e8c617e8964146b57bd25663e292a, type: 3}
       insertIndex: -1
