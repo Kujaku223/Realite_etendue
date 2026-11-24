@@ -14,6 +14,8 @@ public sealed class TutorialInstructionDisplay : MonoBehaviour
     [SerializeField] TMPro.TextMeshPro m_Progress;
 
     [Header("Comfort")]
+    [SerializeField, Tooltip("Disable to keep the board at its scene Transform, without following the camera.")]
+    bool m_FollowHead = true;
     [SerializeField, Min(1f)] float m_Distance = 1.8f;
     [SerializeField, Range(0f, 1f)] float m_BelowEyes = 0.1f;
     [SerializeField, Range(30f, 100f)] float m_RecenterAngle = 65f;
@@ -78,10 +80,10 @@ public sealed class TutorialInstructionDisplay : MonoBehaviour
 
     void LateUpdate()
     {
-        if (m_Panel == null || m_Head == null || m_Tutorial == null) return;
+        if (m_Panel == null || m_Tutorial == null) return;
         bool visible = m_Tutorial.Initialized && !GreenCubeWarp.IsTransitioning;
         if (m_Panel.activeSelf != visible) m_Panel.SetActive(visible);
-        if (!visible) return;
+        if (!visible || !m_FollowHead || m_Head == null) return;
         Vector3 forward = Vector3.ProjectOnPlane(m_Head.forward, Vector3.up).normalized;
         if (forward.sqrMagnitude < 0.001f) return;
         Vector3 toPanel = Vector3.ProjectOnPlane(transform.position - m_Head.position, Vector3.up);
