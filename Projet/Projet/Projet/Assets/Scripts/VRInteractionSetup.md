@@ -238,8 +238,9 @@ white `MM:SS` text on a dark background. It has no collider or UI raycaster and
 does not intercept targeting. Counting starts after an entry fade finishes.
 At **00:00**, the timer reserves the same transition guard used by the cubes,
 plays three 2D beeps 0.5 seconds apart, then fades to EmptyPlains. Other warp
-requests cannot interrupt that sequence. EmptyPlains has no countdown; grabbing
-its return cube reloads the level with a fresh **05:00** timer and reset puzzles.
+requests cannot interrupt that sequence. EmptyPlains has no countdown. Complete
+its tutorial, then make a new grip grab of the return cube to reload the level
+with a fresh **05:00** timer and reset puzzles.
 
 For a short manual check, temporarily set **Duration Seconds** to 3 before
 entering Play Mode, verify the beeps and fade, then restore the saved value to
@@ -247,9 +248,66 @@ entering Play Mode, verify the beeps and fade, then restore the saved value to
 outlines, impact cooldown, resize limits, and simultaneous timer/cube attempts
 with the headset. No test scripts are required.
 
+## EmptyPlains tutorial
+
+Every arrival in EmptyPlains starts a new three-step tutorial using the existing
+**Red Interaction Cube** for grabbing and resizing. **Green Warp Cube** is only
+for starting the game after completion. `EmptyPlains Tutorial` owns scene-local
+progress; no progress is saved between visits. Its instruction board uses
+noninteractive world-space TextMeshPro with `Assets/Materials/TutorialPanel.mat`,
+and does not intercept rays. Keep **Follow Head** disabled for fixed scene placement;
+the shadow-only backing casts the board's ground shadow without a collider.
+
+1. **Move and turn:** use the left thumbstick to move and the right thumbstick
+   left/right to turn. Both 0.75 m of horizontal rig travel and 30 degrees of
+   rig turning are required. Only actual rig motion during the corresponding
+   configured action counts; startup alignment and head tracking do not.
+   **Editor simulator exception:** EmptyPlains has **Editor Simulator Pose
+   Progress** enabled on its tutorial component for Meta XR Simulator keyboard/
+   Xbox view navigation. In this mode, 0.75 m of horizontal camera travel and
+   30 degrees of camera yaw count without requiring XR thumbstick actions. The
+   board explicitly labels this as an Editor simulator test. Initialization
+   alignment is still excluded. Disable this option when validating actual
+   headset thumbstick controls in the Editor; it is always ignored in player
+   builds. Grab, resize, and warp requirements are not bypassed.
+2. **Grab RED:** make a new grip selection of the red cube with either controller.
+   Grabbing during movement does not pre-complete this step. Grabbing green cannot
+   advance this step or start the game while learning. Release grip for resizing.
+3. **Resize RED:** point both controllers at the red cube, hold both triggers,
+   then move hands apart or together. Grow or shrink by 20% relative to the size
+   when this step began; release a trigger to finish. Jitter or a lock without
+   size change does not qualify. The usual 0.25x–4x limits and player-contact
+   protection remain active. Completion thresholds are editable on EmptyPlainsTutorial.
+
+Once complete, make a **new grip grab of GREEN**, pulling it to the controller
+ to start a fresh Environnement. The ordinary contact check, fades, hourglass,
+and post-load grip-release protection are preserved. A green grab made before
+completion cannot automatically start the game when red resizing finishes.
+Invalid setup keeps the tutorial gate closed. Red never performs a warp.
+
+EmptyPlainsTutorial's **Cube** and **Scaler** references both point to the red
+scene instance. Red keeps its existing VRTwoHandScale; the scene-added scaler has
+been removed from green. GreenCubeWarp's optional **Tutorial** reference remains
+assigned only in EmptyPlains. Shared prefabs, gyms, and door-spawned warp cubes
+are unchanged. A lost, unheld, non-scaling RED tutorial cube returns to the floor
+two metres ahead if it falls below -2 m or travels more than 12 m horizontally
+from the headset; its size is preserved.
+
+Check both red practice steps with either hand, green grabs before readiness,
+one-trigger attempts, growth/shrink completion, a fresh green grab after
+finishing, and repeated arrivals following Environnement timeout. Check board
+readability and stereo fades with the headset; automated state checks do not
+substitute for tracked input tests.
+
+The original single-cube tutorial had synthetic runtime state checks; those are
+not proof of the revised two-cube input/contact behavior. Physical headset
+controls, both-eye comfort, actual contact-to-load departure, and repeated
+ timeout/return cycles still require the manual checks above.
+No permanent test harness or screenshots are retained.
+
 ## Green cube warp
 
-Unlocking PorteRouge invokes `PadlockUnlock.onUnlocked` immediately, while the
+Unlocking PorteRouge invokes`PadlockUnlock.onUnlocked` immediately, while the
 door begins opening. `DoorWarpSpawner.SpawnOnce()` creates one **Green Warp Cube**
 at the door's **Warp Cube Spawn Point**, initially local `(0, 0.2, -1.5)`.
 Edit that child transform to adjust its position. The shared door prefab and
