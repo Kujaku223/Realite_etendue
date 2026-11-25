@@ -21,6 +21,12 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
     [SerializeField, Tooltip("Return to the departing scene. Disable to always load Fallback Level.")]
     bool m_ReturnToDepartingScene = true;
     [SerializeField, Min(0f)] float m_ContactTolerance = 0.01f;
+    [SerializeField, Tooltip("Start the transition on a valid held grip selection, without waiting for controller contact.")]
+    bool m_WarpOnGrab;
+    [SerializeField, Tooltip("Keep the cube and independent prompt at their authored scene Transforms. Do not reposition or rotate either at startup.")]
+    bool m_UseAuthoredPlacement;
+    [SerializeField, Tooltip("Optional independent prompt anchor. Never carried with the cube. Its scene Transform is preserved when Use Authored Placement is enabled.")]
+    Transform m_StartPromptAnchor;
     [SerializeField, Min(0f)] float m_FadeOutDuration = 0.6f;
     [SerializeField, Min(0f)] float m_FadeInDuration = 0.6f;
     [SerializeField, Tooltip("Optional. This cube can still be grabbed while learning, but cannot warp until the tutorial is complete.")]
@@ -79,7 +85,7 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
         if (!m_Initialized && m_Mode == WarpMode.RestartLevel)
         {
             Camera head = Camera.main;
-            if (head != null)
+            if (!m_UseAuthoredPlacement && head != null)
             {
                 Vector3 forward = Vector3.ProjectOnPlane(head.transform.forward, Vector3.up).normalized;
                 if (forward.sqrMagnitude < 0.001f)
@@ -94,6 +100,17 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
                 }
             }
             m_Initialized = true;
+        }
+        if (!m_UseAuthoredPlacement && m_StartPromptAnchor != null)
+        {
+            m_StartPromptAnchor.position = m_Body.position;
+            Camera head = Camera.main;
+            if (head != null)
+            {
+                Vector3 forward = Vector3.ProjectOnPlane(m_Body.position - head.transform.position, Vector3.up).normalized;
+                if (forward.sqrMagnitude > 0.001f)
+                    m_StartPromptAnchor.rotation = Quaternion.LookRotation(forward, Vector3.up);
+            }
         }
     }
 
@@ -174,6 +191,7 @@ public sealed class GreenCubeWarp : MonoBehaviour, IXRSelectFilter
         if (m_SelectedHand == null || !m_SelectedHand.isActiveAndEnabled ||
             !m_Interactable.IsSelected(m_SelectedHand) || !m_SelectedHand.selectInput.ReadIsPerformed())
             return false;
+        if (m_WarpOnGrab) return true;
 
         // A Near-Far attach anchor can be extended toward a distant hit. Use the
         // actual tracked controller pose so the ray hit cannot count as hand contact.

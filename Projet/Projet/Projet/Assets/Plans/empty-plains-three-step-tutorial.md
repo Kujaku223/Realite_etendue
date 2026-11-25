@@ -1,6 +1,58 @@
+# Current Revision — Red Tutorial Cube / Green Start Cube
+This revision supersedes the original single-green-cube implementation described below. The remaining original plan records the baseline architecture and verification requirements; wherever it assigns tutorial grabbing/resizing/recovery to the green cube or suggests resizing the green cube, use the red cube instead.
+
+## Requested behavior
+- Use the existing **Red Interaction Cube** scene instance for tutorial grab and resize completion, and lost tutorial-cube recovery.
+- Movement and turning remain player locomotion checks, not cube motion checks; preserve current action bindings and thresholds.
+- Use **Green Warp Cube** exclusively for the existing start-game/warp gesture after tutorial completion. Keep its optional tutorial gate and fresh post-completion grab requirement.
+- Preserve repeated tutorials on scene visits, current game destination/transition behavior, fixed instruction-board placement, its shadow backing, and the user's current gaze configuration.
+
+## Current inspected context
+- `Assets/Scenes/EmptyPlains.unity` contains `Red Interaction Cube`, an instance of `Assets/Prefabs/Red Interaction Cube.prefab`, with Rigidbody, BoxCollider, VRHitPointGrabInteractable, VRGrabObject, VRTwoHandScale, and VRObjectFeedback. It has no GreenCubeWarp component.
+- EmptyPlainsTutorial currently assigns both `m_Cube` and `m_Scaler` to Green Warp Cube. These references can be reassigned directly without redesigning the state machine.
+- The green instance currently has a scene-only VRTwoHandScale, and its GreenCubeWarp references EmptyPlains Tutorial. Remove only that scene-added scaler; preserve the prefab and warp gate.
+- Both existing scalers use 0.25x–4x limits. Reuse the red cube's current configuration.
+- TutorialInstructionDisplay contains green-specific grab text in both serialized strings and Refresh's progress message. Ready text currently suggests shrinking the green cube; that advice must be removed once green resizing is removed.
+- AssetDatabase dependency inspection confirms the red prefab is already referenced by EmptyPlains. No shared prefabs, input assets, lighting/materials, or generic grab/scale scripts need modification.
+
+## UI wording
+Keep the existing fixed world-space layout:
+```text
+1 / 3 MOVE & TURN  -> existing movement instructions
+2 / 3 GRAB THE RED CUBE
+Point at or touch the RED cube. Hold either GRIP to grab.
+3 / 3 RESIZE THE RED CUBE
+Release GRIP. Point BOTH controllers at the RED cube.
+Hold BOTH TRIGGERS; move hands apart/together; release to finish.
+TUTORIAL COMPLETE
+Release the triggers, then make a NEW grip grab on the GREEN cube.
+Pull it to your hand to enter Environnement.
+```
+Update both script defaults/hardcoded progress strings and the scene's serialized instruction overrides so saved strings cannot retain obsolete green-tutorial instructions. No new panels or fonts.
+
+## Revision implementation steps
+1. Recheck exact red/green scene identities, their component connections, prefab override ownership, and dependency/reverse-dependency impact before edits. Dependency: approval of this revision. Use the available dependency inspection tool where available; otherwise use AssetDatabase read-only dependency inspection.
+2. In `Assets/Scenes/EmptyPlains.unity`, assign EmptyPlainsTutorial.m_Cube to Red Interaction Cube's VRHitPointGrabInteractable and m_Scaler to its existing VRTwoHandScale. Preserve Origin, Move, Turn, simulator-testing setting, thresholds, and all red prefab settings. Dependency: Step 1.
+3. Verify only the green scene-added VRTwoHandScale is removed from EmptyPlains, leaving VRGrabObject, interactable, Rigidbody, feedback, and GreenCubeWarp untouched. Keep GreenCubeWarp.m_Tutorial assigned. Red must have no warp behavior. Do not apply changes to shared prefabs. Dependency: Steps 1–2.
+4. In `Assets/Scripts/TutorialInstructionDisplay.cs`, change grab/resize instructions and titles/progress to explicitly identify the red cube, and completion instructions to identify only the green cube. Apply matching scene string overrides. Preserve text sizing, fixed Transform, Follow Head=false, panel visibility, and shadow caster hierarchy. Dependency: Step 2.
+5. Update relevant tutorial documentation in `Assets/Scripts/VRInteractionSetup.md` to describe red practice versus green start and scene-only wiring. Avoid rewriting unrelated documentation. Dependency: Steps 2–4.
+6. Compile, inspect saved scene references/overrides, and run available functional checks. No new testing package or permanent harness. Save EmptyPlains only after verifying wiring. Dependency: Steps 2–5.
+
+## Revision verification & testing
+- Compilation succeeds; mandatory tutorial references are non-null and red grab/scaler references point to the same object.
+- Move/turn still advance the first step using existing controls; neither cube can bypass ordering.
+- Grabbing GREEN during tutorial does not advance Grab or warp; grabbing RED with a valid player controller during Grab advances to Resize.
+- Genuine RED resizing by the existing 20% threshold followed by trigger release completes Resize. RED never starts a scene transition.
+- GREEN has no active resizing component in EmptyPlains. Its fresh grip/contact gesture works only after the tutorial is complete, preserving single-load guard and destination behavior.
+- Pre-existing GREEN selection does not automatically start the game when RED resizing completes; release and a new green grab are required.
+- Throw/drop RED below the recovery threshold or outside recovery distance: existing tutorial recovery operates on RED only, without marking progress; held/scaling red cube is not repositioned.
+- Start-game instructions no longer advise resizing GREEN. Existing fixed board and cast shadow remain unchanged and readable; text does not overflow.
+- Revisit EmptyPlains: fresh three-step tutorial uses RED again. Other scenes' green warp cubes and red interaction cubes remain unchanged.
+- Report compilation/reference checks separately from actual simulator/headset acceptance testing.
+
 # Project Overview
 - **Game Title:** Existing VR project; title not supplied. This plan concerns only its EmptyPlains tutorial, not a new game.
-- **High-Level Concept:** Teach the existing VR controls in three ordered, action-verified steps: movement/turning, grabbing the green cube, and resizing that same cube. Only after completion may the existing cube gesture warp the player to Environnement.
+- **High-Level Concept:** Teach the existing VR controls in three ordered, action-verified steps: movement/turning, grabbing the red tutorial cube, and resizing that same red cube. Only after completion may the separate green cube gesture warp the player to Environnement.
 - **Players:** Existing single-player XR experience.
 - **Inspiration / Reference Games:** Existing project interaction conventions; no external reference requested.
 - **Tone / Art Direction:** Preserve the gray plains, red doorway frame, green cube, and amber interaction feedback. Clear, unobtrusive instructional text, without new environment art.

@@ -250,10 +250,13 @@ with the headset. No test scripts are required.
 
 ## EmptyPlains tutorial
 
-Every arrival in EmptyPlains starts a new three-step tutorial on the existing
-**Green Warp Cube**. `EmptyPlains Tutorial` owns scene-local progress; no progress
-is saved between visits. Its instruction board uses noninteractive world-space
-TextMeshPro with `Assets/Materials/TutorialPanel.mat`, and does not intercept rays.
+Every arrival in EmptyPlains starts a new three-step tutorial using the existing
+**Red Interaction Cube** for grabbing and resizing. **Green Warp Cube** is only
+for starting the game after completion. `EmptyPlains Tutorial` owns scene-local
+progress; no progress is saved between visits. Its instruction board uses
+noninteractive world-space TextMeshPro with `Assets/Materials/TutorialPanel.mat`,
+and does not intercept rays. Keep **Follow Head** disabled for fixed scene placement;
+the shadow-only backing casts the board's ground shadow without a collider.
 
 1. **Move and turn:** use the left thumbstick to move and the right thumbstick
    left/right to turn. Both 0.75 m of horizontal rig travel and 30 degrees of
@@ -267,40 +270,39 @@ TextMeshPro with `Assets/Materials/TutorialPanel.mat`, and does not intercept ra
    alignment is still excluded. Disable this option when validating actual
    headset thumbstick controls in the Editor; it is always ignored in player
    builds. Grab, resize, and warp requirements are not bypassed.
-2. **Grab:** make a new grip selection of the green cube with either controller.
-   Grabbing during movement does not pre-complete this step. Contact cannot warp
-   while learning. Release grip so both hands are free for the next step.
-3. **Resize:** point both controllers at the same cube, hold both triggers, then
-   move hands apart or together. Grow or shrink by 20% relative to the size when
-   this step began; release a trigger to finish. Jitter or a lock without size
-   change does not qualify. The usual 0.25x–4x limits and player-contact protection
-   remain active. These completion thresholds are editable on EmptyPlainsTutorial.
+2. **Grab RED:** make a new grip selection of the red cube with either controller.
+   Grabbing during movement does not pre-complete this step. Grabbing green cannot
+   advance this step or start the game while learning. Release grip for resizing.
+3. **Resize RED:** point both controllers at the red cube, hold both triggers,
+   then move hands apart or together. Grow or shrink by 20% relative to the size
+   when this step began; release a trigger to finish. Jitter or a lock without
+   size change does not qualify. The usual 0.25x–4x limits and player-contact
+   protection remain active. Completion thresholds are editable on EmptyPlainsTutorial.
 
-Once complete, make a **new grip grab**, pulling the cube to the controller to
-warp to a fresh Environnement. If too large to grab, shrink it below headset
-height first. The ordinary contact check, fades, hourglass, and post-load grip
-release protection are preserved. Invalid setup keeps this tutorial gate closed.
+Once complete, make a **new grip grab of GREEN**, pulling it to the controller
+ to start a fresh Environnement. The ordinary contact check, fades, hourglass,
+and post-load grip-release protection are preserved. A green grab made before
+completion cannot automatically start the game when red resizing finishes.
+Invalid setup keeps the tutorial gate closed. Red never performs a warp.
 
-Only the EmptyPlains cube instance has VRTwoHandScale and the optional
-GreenCubeWarp Tutorial reference. The shared prefab, gyms, and door-spawned warp
-cubes retain their original grabbing-only, ungated behavior. A lost, unheld,
-non-scaling tutorial cube returns to the floor two metres ahead if it falls below
--2 m or travels more than 12 m horizontally from the headset; size is preserved.
+EmptyPlainsTutorial's **Cube** and **Scaler** references both point to the red
+scene instance. Red keeps its existing VRTwoHandScale; the scene-added scaler has
+been removed from green. GreenCubeWarp's optional **Tutorial** reference remains
+assigned only in EmptyPlains. Shared prefabs, gyms, and door-spawned warp cubes
+are unchanged. A lost, unheld, non-scaling RED tutorial cube returns to the floor
+two metres ahead if it falls below -2 m or travels more than 12 m horizontally
+from the headset; its size is preserved.
 
-Check the three steps with either hand, premature contact, one-trigger attempts,
-both growth/shrink completion, new grip after finishing, and repeated arrivals
-following Environnement timeout. Check board readability and stereo fades with
-the headset; automated state checks do not substitute for tracked input tests.
+Check both red practice steps with either hand, green grabs before readiness,
+one-trigger attempts, growth/shrink completion, a fresh green grab after
+finishing, and repeated arrivals following Environnement timeout. Check board
+readability and stereo fades with the headset; automated state checks do not
+substitute for tracked input tests.
 
-Implementation validation passed: compilation; saved reference and scene-instance
-override checks; every instruction string fits its text rectangle; runtime
-startup gating, ordered movement/grab/resize progression, scale jitter rejection,
-release-before-completion, fresh-grab arming, and lost-cube floor recovery.
-The runtime checks injected synthetic motion/scale state and selection events;
-they did not simulate tracked grip/trigger input or perform a scene load. A runtime
-screenshot verified readable resize instructions and non-overlapping panel text.
-Physical headset controls, both-eye comfort, actual contact-to-load departure,
-and repeated timeout/return cycles still require the manual checks above.
+The original single-cube tutorial had synthetic runtime state checks; those are
+not proof of the revised two-cube input/contact behavior. Physical headset
+controls, both-eye comfort, actual contact-to-load departure, and repeated
+ timeout/return cycles still require the manual checks above.
 No permanent test harness or screenshots are retained.
 
 ## Green cube warp

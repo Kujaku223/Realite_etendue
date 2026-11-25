@@ -24,9 +24,9 @@ public sealed class TutorialInstructionDisplay : MonoBehaviour
 
     [Header("Instructions")]
     [SerializeField, TextArea] string m_MovementText = "Use the LEFT thumbstick to move.\nPush the RIGHT thumbstick left or right to turn.\nMove a little and try turning.";
-    [SerializeField, TextArea] string m_GrabText = "Point at or touch the GREEN cube.\nHold either GRIP button to grab it.\nRelease GRIP to put it down.";
-    [SerializeField, TextArea] string m_ResizeText = "Release GRIP so both hands are free.\nPoint BOTH controllers at the cube. Hold BOTH TRIGGERS.\nHands apart: grow. Hands together: shrink.\nChange its size, then release a trigger.";
-    [SerializeField, TextArea] string m_ReadyText = "Hold GRIP to pull the green cube to your hand\nand enter Environnement.\nIf it is too large to grab, shrink it first.";
+    [SerializeField, TextArea] string m_GrabText = "Point at or touch the RED cube.\nHold either GRIP button to grab it.\nRelease GRIP to put it down.";
+    [SerializeField, TextArea] string m_ResizeText = "Release GRIP so both hands are free.\nPoint BOTH controllers at the RED cube. Hold BOTH TRIGGERS.\nHands apart: grow. Hands together: shrink.\nChange its size, then release a trigger.";
+    [SerializeField, TextArea] string m_ReadyText = "Release the triggers, then hold GRIP to grab the GREEN cube.\nPull it to your hand to start the game\nand enter Environnement.";
 
     bool m_Positioned;
     bool m_Recentering;
@@ -60,20 +60,20 @@ public sealed class TutorialInstructionDisplay : MonoBehaviour
                     m_Tutorial.UsesSimulatorPoseProgress ? "Turn: turn your view" : "Turn: try the right stick");
                 break;
             case EmptyPlainsTutorial.TutorialStep.Grab:
-                m_Title.text = "2 / 3   GRAB THE CUBE";
+                m_Title.text = "2 / 3   GRAB THE RED CUBE";
                 m_Body.text = m_GrabText;
-                m_Progress.text = "Movement complete. Grab the green cube to continue.";
+                m_Progress.text = "Movement complete. Grab the RED cube to continue.";
                 break;
             case EmptyPlainsTutorial.TutorialStep.Resize:
-                m_Title.text = "3 / 3   RESIZE THE CUBE";
+                m_Title.text = "3 / 3   RESIZE THE RED CUBE";
                 m_Body.text = m_ResizeText;
                 m_Progress.text = m_Tutorial.ResizeQualified ? "Size change: DONE. Release a trigger to finish." :
-                    string.Format("Grow or shrink the cube by {0:0}%.", m_Tutorial.ResizeTargetPercent);
+                    string.Format("Grow or shrink the RED cube by {0:0}%.", m_Tutorial.ResizeTargetPercent);
                 break;
             default:
                 m_Title.text = "TUTORIAL COMPLETE";
                 m_Body.text = m_ReadyText;
-                m_Progress.text = "Release the triggers, then make a NEW grip grab to warp.";
+                m_Progress.text = "Make a NEW grip grab on the GREEN cube to start the game.";
                 break;
         }
     }
