@@ -40,6 +40,12 @@ public sealed class VRTwoHandScale : MonoBehaviour
 
     public bool isScaling { get; private set; }
 
+    /// <summary>
+    /// Size given by the player, relative to the object's starting size (1 = unchanged, 0 = not started yet).
+    /// Resizing the house with the object inside does not change it (see ApplyInheritedScaleFactor).
+    /// </summary>
+    public float scaleMultiplier => CurrentMultiplier();
+
     /// <summary>Raised once when a resize reaches the maximum size; re-armed after shrinking a little.</summary>
     public event System.Action reachedMaximumScale;
     const float k_MaximumReachedRatio = 0.999f;

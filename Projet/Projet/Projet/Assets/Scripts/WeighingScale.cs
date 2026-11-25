@@ -43,6 +43,7 @@ public class WeighingScale : MonoBehaviour
     public bool IsSolved => solved;              // used to compare states of the 3 scales
 
     Rigidbody requiredBody;
+    VRTwoHandScale requiredScaler;
     Transform weightReferenceFrame;
     float initialRelativeVolume;
     bool onPad;
@@ -64,16 +65,27 @@ public class WeighingScale : MonoBehaviour
         return volume / Mathf.Max(1e-12f, frameVolume);
     }
 
-    // Authored Rigidbody.mass is the weight at the authored size. Measure in
-    // house space so resizing Maison itself does not change its puzzle targets.
-    float GetWeight() => requiredBody == null ? 0f : requiredBody.mass *
-        (scaleAffectsWeight && initialRelativeVolume > 0f ? RelativeVolume() / initialRelativeVolume : 1f);
+    // Authored Rigidbody.mass is the weight at the authored size.
+    float GetWeight() => requiredBody == null ? 0f : requiredBody.mass * (scaleAffectsWeight ? SizeFactor() : 1f);
+
+    float SizeFactor()
+    {
+        // Resizable objects: weight follows the size the player gave them (multiplier cubed). VRTwoHandScale keeps
+        // that multiplier unchanged when Maison is resized, so objects brought in from outside the house weigh
+        // the same whatever the house size (the house-space ratio below made them far too light once it grew).
+        float multiplier = requiredScaler != null ? requiredScaler.scaleMultiplier : 0f;
+        if (multiplier > 0f)
+            return multiplier * multiplier * multiplier;
+        // Other objects: measure in house space so resizing Maison itself does not change its puzzle targets.
+        return initialRelativeVolume > 0f ? RelativeVolume() / initialRelativeVolume : 1f;
+    }
 
     void Awake()
     {
         if (requiredObject != null)
         {
             requiredBody = requiredObject.GetComponentInChildren<Rigidbody>();
+            requiredScaler = requiredBody != null ? requiredBody.GetComponent<VRTwoHandScale>() : null;
             var house = GetComponentInParent<VRHouseInteractionLock>();
             weightReferenceFrame = house != null ? house.transform : transform.root;
             initialRelativeVolume = RelativeVolume();
