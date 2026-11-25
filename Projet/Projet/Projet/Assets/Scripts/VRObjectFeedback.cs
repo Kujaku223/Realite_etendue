@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -32,6 +33,15 @@ public sealed class VRObjectFeedback : MonoBehaviour
     float m_LastScaleMotion = float.NegativeInfinity;
     float m_LastImpact = float.NegativeInfinity;
     bool m_OutlineBuilt;
+    bool m_OutlineShown;
+    IEnumerator m_OutlineBuilder;
+
+    // Outline proxies are prepared in the background after load instead of on the first hover:
+    // a large object like the house has thousands of renderers and froze the game for about a second.
+    // The budget is shared by all instances so several objects never add up in the same frame.
+    const double k_BuildBudgetMs = 2.0;
+    static int s_BudgetFrame = -1;
+    static double s_BudgetUsedMs;
 
     void Reset() => m_Profile = VRFeedbackProfile.Default;
 
@@ -84,14 +94,19 @@ public sealed class VRObjectFeedback : MonoBehaviour
         bool scaling = m_Scaler != null && m_Scaler.isActiveAndEnabled && m_Scaler.isScaling;
         bool outlined = m_Interactable.isActiveAndEnabled &&
             (m_Interactable.isHovered || m_Interactable.isSelected || scaling);
-        if (outlined && !m_OutlineBuilt)
-            BuildOutline();
-        foreach (var part in m_Parts)
+        if (!m_OutlineBuilt)
+            AdvanceOutlineBuild(finishNow: outlined);
+        // Hidden proxies stay hidden: skip the per-part loop unless the outline is or was just visible.
+        if (outlined || m_OutlineShown)
         {
-            bool show = outlined && part.source != null && part.source.enabled && part.source.gameObject.activeInHierarchy;
-            if (part.mask != null) part.mask.enabled = show;
-            if (part.shell != null) part.shell.enabled = show;
-            if (part.clear != null) part.clear.enabled = show;
+            foreach (var part in m_Parts)
+            {
+                bool show = outlined && part.source != null && part.source.enabled && part.source.gameObject.activeInHierarchy;
+                if (part.mask != null) part.mask.enabled = show;
+                if (part.shell != null) part.shell.enabled = show;
+                if (part.clear != null) part.clear.enabled = show;
+            }
+            m_OutlineShown = outlined;
         }
 
         Vector3 scale = transform.lossyScale;
@@ -135,44 +150,82 @@ public sealed class VRObjectFeedback : MonoBehaviour
         return material;
     }
 
-    void BuildOutline()
+    /// <summary>Runs outline construction steps: within the shared frame budget, or all at once when needed now.</summary>
+    void AdvanceOutlineBuild(bool finishNow)
     {
+        m_OutlineBuilder ??= BuildOutlineSteps();
+        if (finishNow)
+        {
+            while (m_OutlineBuilder.MoveNext()) { }
+        }
+        else
+        {
+            if (s_BudgetFrame != Time.frameCount)
+            {
+                s_BudgetFrame = Time.frameCount;
+                s_BudgetUsedMs = 0.0;
+            }
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            bool more = true;
+            while (s_BudgetUsedMs + ElapsedMs(start) < k_BuildBudgetMs && (more = m_OutlineBuilder.MoveNext())) { }
+            s_BudgetUsedMs += ElapsedMs(start);
+            if (more)
+                return;
+        }
         m_OutlineBuilt = true;
+        m_OutlineBuilder = null;
+    }
+
+    static double ElapsedMs(long start) =>
+        (System.Diagnostics.Stopwatch.GetTimestamp() - start) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+
+    /// <summary>Builds the outline one renderer / one LOD group per step.</summary>
+    IEnumerator BuildOutlineSteps()
+    {
         if (m_Profile.outlineMask == null || m_Profile.outlineShell == null || m_Profile.outlineClear == null)
-            return;
+            yield break;
         Material mask = CopyMaterial(m_Profile.outlineMask);
         Material shell = CopyMaterial(m_Profile.outlineShell);
         Material clear = CopyMaterial(m_Profile.outlineClear);
         // Snapshot before adding proxy renderers so they cannot recursively outline themselves.
         var sources = GetComponentsInChildren<Renderer>(true);
+        var partBySource = new Dictionary<Renderer, OutlinePart>();
         foreach (var source in sources)
         {
-            if (source.GetComponentInParent<XRBaseInteractable>(true) != m_Interactable ||
+            // Steps are spread over frames: skip renderers destroyed in the meantime.
+            if (source == null ||
+                source.GetComponentInParent<XRBaseInteractable>(true) != m_Interactable ||
                 source.GetComponentInParent<Rigidbody>(true) != m_Body)
                 continue;
             Mesh mesh = source is SkinnedMeshRenderer skinned ? skinned.sharedMesh :
                 source.TryGetComponent<MeshFilter>(out var filter) ? filter.sharedMesh : null;
             if (mesh == null)
                 continue;
-            m_Parts.Add(new OutlinePart
+            var part = new OutlinePart
             {
                 source = source,
                 mask = MakeProxy(source, mesh, mask),
                 shell = MakeProxy(source, GetShellMesh(mesh), shell, !mesh.isReadable),
                 clear = MakeProxy(source, mesh, clear),
-            });
+            };
+            m_Parts.Add(part);
+            partBySource[source] = part;
+            yield return null;
         }
 
         foreach (var group in GetComponentsInChildren<LODGroup>(true))
         {
+            if (group == null)
+                continue;
             LOD[] lods = group.GetLODs();
             bool patched = false;
             for (int i = 0; i < lods.Length; ++i)
             {
+                // Look up only this LOD's own renderers (comparing every LOD with every part was quadratic).
                 var renderers = new List<Renderer>(lods[i].renderers);
-                foreach (var part in m_Parts)
+                foreach (var renderer in lods[i].renderers)
                 {
-                    if (!renderers.Contains(part.source)) continue;
+                    if (renderer == null || !partBySource.TryGetValue(renderer, out var part)) continue;
                     renderers.Add(part.mask); renderers.Add(part.shell); renderers.Add(part.clear);
                     patched = true;
                 }
@@ -183,6 +236,7 @@ public sealed class VRObjectFeedback : MonoBehaviour
                 group.SetLODs(lods);
                 m_PatchedGroups.Add(group);
             }
+            yield return null;
         }
     }
 
@@ -259,6 +313,7 @@ public sealed class VRObjectFeedback : MonoBehaviour
         if (m_Interactable != null) m_Interactable.selectEntered.RemoveListener(OnGrab);
         foreach (var renderer in m_OwnedRenderers)
             if (renderer != null) renderer.enabled = false;
+        m_OutlineShown = false;
         if (m_GrabAudio != null) m_GrabAudio.Stop();
         if (m_ImpactAudio != null) m_ImpactAudio.Stop();
         if (m_ResizeAudio != null) m_ResizeAudio.Stop();
