@@ -12,6 +12,7 @@ public sealed class TutorialInstructionDisplay : MonoBehaviour
     [SerializeField] TMPro.TextMeshPro m_Title;
     [SerializeField] TMPro.TextMeshPro m_Body;
     [SerializeField] TMPro.TextMeshPro m_Progress;
+    [SerializeField] GameObject m_ResizeIllustrations;
 
     [Header("Comfort")]
     [SerializeField, Tooltip("Disable to keep the board at its scene Transform, without following the camera.")]
@@ -48,6 +49,8 @@ public sealed class TutorialInstructionDisplay : MonoBehaviour
     void Refresh()
     {
         if (m_Tutorial == null || m_Title == null || m_Body == null || m_Progress == null) return;
+        if (m_ResizeIllustrations != null)
+            m_ResizeIllustrations.SetActive(m_Tutorial.Step == EmptyPlainsTutorial.TutorialStep.Resize);
         switch (m_Tutorial.Step)
         {
             case EmptyPlainsTutorial.TutorialStep.Movement:
