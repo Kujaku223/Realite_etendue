@@ -40,6 +40,12 @@ public sealed class VRTwoHandScale : MonoBehaviour
 
     public bool isScaling { get; private set; }
 
+    /// <summary>Raised once when a resize reaches the maximum size; re-armed after shrinking a little.</summary>
+    public event System.Action reachedMaximumScale;
+    const float k_MaximumReachedRatio = 0.999f;
+    const float k_MaximumRearmRatio = 0.97f;
+    bool m_AtMaximumScale;
+
     internal void ApplyInheritedScaleFactor(float factor)
     {
         if (factor > 0f && !float.IsInfinity(factor) && !float.IsNaN(factor))
@@ -84,6 +90,7 @@ public sealed class VRTwoHandScale : MonoBehaviour
             float multiplier = Mathf.Clamp(m_StartMultiplier * separation / m_StartSeparation,
                 m_MinimumScaleMultiplier, m_MaximumScaleMultiplier);
             ApplyScaleWithPlayerContact(multiplier, separation);
+            UpdateMaximumScaleCue();
             ApplyLockedPose();
             return;
         }
@@ -144,7 +151,30 @@ public sealed class VRTwoHandScale : MonoBehaviour
         m_Body.useGravity = false;
         isScaling = true;
         s_ActiveScale = this;
+        // Already at the maximum when grabbed: no cue until the object has been shrunk a little.
+        m_AtMaximumScale = CurrentMultiplier() >= m_MaximumScaleMultiplier * k_MaximumReachedRatio;
         ApplyLockedPose();
+    }
+
+    float CurrentMultiplier()
+    {
+        float initialLength = m_InitialWorldScale.magnitude;
+        return initialLength < Mathf.Epsilon ? 0f : transform.lossyScale.magnitude / initialLength;
+    }
+
+    // Uses the size actually applied, so growth blocked by the player's body does not count as the limit.
+    void UpdateMaximumScaleCue()
+    {
+        float current = CurrentMultiplier();
+        if (!m_AtMaximumScale && current >= m_MaximumScaleMultiplier * k_MaximumReachedRatio)
+        {
+            m_AtMaximumScale = true;
+            reachedMaximumScale?.Invoke();
+        }
+        else if (m_AtMaximumScale && current < m_MaximumScaleMultiplier * k_MaximumRearmRatio)
+        {
+            m_AtMaximumScale = false;
+        }
     }
 
     void ApplyScaleWithPlayerContact(float multiplier, float separation)

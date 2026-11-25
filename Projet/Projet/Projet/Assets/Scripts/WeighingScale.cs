@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 /// Put this on a pad with a trigger collider. Only the assigned GameObject is weighed.
 /// The pad compresses as the weight approaches the target and changes colour: empty / too light / correct / too heavy.
@@ -100,7 +101,23 @@ public class WeighingScale : MonoBehaviour
         {
             flashTimer = wrongFlashTime;
             onWrongObject?.Invoke(rb.gameObject);
+            PlayWrongObjectSound(rb);
         }
+    }
+
+    const float wrongSoundCooldown = 1f;   // an object with several colliders enters several times
+    float nextWrongSoundTime;
+
+    void PlayWrongObjectSound(Rigidbody rb)
+    {
+        // Only grabbable props, not the house that contains this scale (its walls and table also have its body).
+        if (transform.IsChildOf(rb.transform) || rb.GetComponent<XRBaseInteractable>() == null) return;
+        if (Time.time < nextWrongSoundTime) return;
+        var profile = VRFeedbackProfile.Default;
+        if (profile == null || profile.wrongObjectClip == null) return;
+        // Never overlap the clip with itself, even when it is longer than the cooldown.
+        nextWrongSoundTime = Time.time + Mathf.Max(wrongSoundCooldown, profile.wrongObjectClip.length);
+        AudioSource.PlayClipAtPoint(profile.wrongObjectClip, transform.position, profile.wrongObjectVolume);
     }
 
     void OnTriggerExit(Collider other)

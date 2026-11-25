@@ -17,11 +17,20 @@ public sealed class VRFeedbackProfile : ScriptableObject
     public AudioClip resizeLoopClip;
     public AudioClip timerBeepClip;
     public AudioClip doorCreakClip;
+    [Tooltip("Played once when a two-hand resize reaches the object's maximum size.")]
+    public AudioClip sizeLimitClip;
+    [Tooltip("Played when a grabbable object that is not the expected one lands on a weighing scale.")]
+    public AudioClip wrongObjectClip;
+    [Tooltip("Played when all weighing scales are solved at the same time.")]
+    public AudioClip puzzleSolvedClip;
     [Range(0f, 1f)] public float thudVolume = 0.6f;
     [Range(0f, 1f)] public float grabVolume = 0.35f;
     [Range(0f, 1f)] public float resizeVolume = 0.2f;
     [Range(0f, 1f)] public float timerBeepVolume = 0.4f;
     [Range(0f, 1f)] public float doorCreakVolume = 0.35f;
+    [Range(0f, 1f)] public float sizeLimitVolume = 0.5f;
+    [Range(0f, 1f)] public float wrongObjectVolume = 0.5f;
+    [Range(0f, 1f)] public float puzzleSolvedVolume = 0.7f;
     [Min(0f)] public float minimumImpactSpeed = 0.35f;
     [Min(0.01f)] public float fullVolumeImpactSpeed = 3f;
     [Min(0f)] public float impactCooldown = 0.2f;

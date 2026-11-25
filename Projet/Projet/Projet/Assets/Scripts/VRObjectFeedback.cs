@@ -77,6 +77,7 @@ public sealed class VRObjectFeedback : MonoBehaviour
     void OnEnable()
     {
         m_Interactable.selectEntered.AddListener(OnGrab);
+        if (m_Scaler != null) m_Scaler.reachedMaximumScale += OnReachedMaximumScale;
         m_LastScale = transform.lossyScale;
         m_LastScaleMotion = float.NegativeInfinity;
     }
@@ -85,6 +86,12 @@ public sealed class VRObjectFeedback : MonoBehaviour
     {
         if (m_Profile != null && m_Profile.grabClip != null)
             m_GrabAudio.PlayOneShot(m_Profile.grabClip, m_Profile.grabVolume);
+    }
+
+    void OnReachedMaximumScale()
+    {
+        if (m_Profile != null && m_Profile.sizeLimitClip != null)
+            m_GrabAudio.PlayOneShot(m_Profile.sizeLimitClip, m_Profile.sizeLimitVolume);
     }
 
     void LateUpdate()
@@ -311,6 +318,7 @@ public sealed class VRObjectFeedback : MonoBehaviour
     void OnDisable()
     {
         if (m_Interactable != null) m_Interactable.selectEntered.RemoveListener(OnGrab);
+        if (m_Scaler != null) m_Scaler.reachedMaximumScale -= OnReachedMaximumScale;
         foreach (var renderer in m_OwnedRenderers)
             if (renderer != null) renderer.enabled = false;
         m_OutlineShown = false;

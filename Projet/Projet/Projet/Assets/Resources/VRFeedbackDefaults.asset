@@ -22,11 +22,17 @@ MonoBehaviour:
   resizeLoopClip: {fileID: 8300000, guid: 817442562ecb5871a3ea1feb9751ee61, type: 3}
   timerBeepClip: {fileID: 8300000, guid: 1286e5f144ed51ee9bc10883cd3c1cc1, type: 3}
   doorCreakClip: {fileID: 8300000, guid: 842589b16b194b1438b98cd99af2dd7e, type: 3}
+  sizeLimitClip: {fileID: 8300000, guid: 587bb28fe3ae4339f9737f0d08cd75d5, type: 3}
+  wrongObjectClip: {fileID: 8300000, guid: b3e9f96e855921799d61622d65098dc0, type: 3}
+  puzzleSolvedClip: {fileID: 8300000, guid: 87be2f0e56267202248764af2ebd6d9f, type: 3}
   thudVolume: 0.6
   grabVolume: 0.35
   resizeVolume: 0.2
   timerBeepVolume: 0.4
   doorCreakVolume: 0.35
+  sizeLimitVolume: 0.5
+  wrongObjectVolume: 0.5
+  puzzleSolvedVolume: 0.7
   minimumImpactSpeed: 0.35
   fullVolumeImpactSpeed: 3
   impactCooldown: 0.2

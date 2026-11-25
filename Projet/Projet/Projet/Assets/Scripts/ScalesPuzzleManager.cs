@@ -16,7 +16,14 @@ public class PuzzleManager : MonoBehaviour
         foreach (var s in scales)
             if (!s.IsSolved) { now = false; break; }
 
-        if (now && !allSolved) { allSolved = true; onAllSolved?.Invoke(); }
+        if (now && !allSolved) { allSolved = true; onAllSolved?.Invoke(); PlaySolvedSound(); }
         else if (!now && allSolved) { allSolved = false; onNoLongerSolved?.Invoke(); }
+    }
+
+    void PlaySolvedSound()
+    {
+        var profile = VRFeedbackProfile.Default;
+        if (profile != null && profile.puzzleSolvedClip != null)
+            AudioSource.PlayClipAtPoint(profile.puzzleSolvedClip, transform.position, profile.puzzleSolvedVolume);
     }
 }
