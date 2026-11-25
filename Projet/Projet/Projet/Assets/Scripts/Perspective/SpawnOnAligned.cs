@@ -5,17 +5,24 @@ using UnityEngine.XR.Interaction.Toolkit.Inputs.Haptics;
 
 /// <summary>
 /// Fait apparaître le vrai objet exactement à la place du cube fantôme, puis efface la projection.
+/// L'objet peut être un prefab (une copie est créée) ou un objet déjà placé dans la scène
+/// (il est caché au lancement puis révélé : c'est le même objet, une balance peut donc l'attendre).
 /// À brancher sur : AnamorphicAlignmentDetector.onAligned → SpawnOnAligned.Spawn()
 /// </summary>
 public class SpawnOnAligned : MonoBehaviour
 {
     [Header("Objet")]
-    [Tooltip("Prefab du vrai cube (ex. cube bleu + Rigidbody + XRGrabInteractable).")]
+    [Tooltip("Prefab à créer (ex. cube bleu + Rigidbody + XRGrabInteractable), OU objet déjà placé dans la scène : " +
+             "il est alors caché au lancement et révélé à l'alignement.")]
     [SerializeField] GameObject prefab;
     [Tooltip("Pose d'apparition : la racine du cube fantôme.")]
     [SerializeField] Transform spawnPose;
-    [Tooltip("Copie l'échelle monde du fantôme, pour que l'objet le recouvre exactement.")]
+    [Tooltip("Copie l'échelle monde du fantôme, pour que l'objet le recouvre exactement. " +
+             "Ignoré pour un objet de la scène : sa taille fixe son poids sur la balance.")]
     [SerializeField] bool matchGhostScale = true;
+    [Tooltip("Objet de la scène : le déplacer sur le fantôme quand il apparaît. Décoché = il apparaît là où tu l'as placé.")]
+    [SerializeField] bool moveSceneObjectToGhost = true;
+    [Tooltip("Parent de la copie créée depuis un prefab (ignoré pour un objet de la scène).")]
     [SerializeField] Transform parent;
 
     [Header("Transition")]
@@ -35,20 +42,41 @@ public class SpawnOnAligned : MonoBehaviour
 
     public GameObject SpawnedInstance { get; private set; }
 
+    /// <summary>Vrai si « prefab » est un objet de la scène (à révéler) plutôt qu'un prefab (à copier).</summary>
+    bool IsSceneObject => prefab != null && prefab.scene.IsValid();
+
+    void Start()
+    {
+        // Caché dans Start et pas dans Awake : les autres scripts (ex. la balance qui attend cet objet)
+        // ont déjà fait leur Awake pendant qu'il était actif, et ont bien trouvé son Rigidbody.
+        if (IsSceneObject && SpawnedInstance == null) prefab.SetActive(false);
+    }
+
     public void Spawn()
     {
         if (SpawnedInstance != null) return;
-        if (prefab == null || spawnPose == null)
+        bool needsPose = !IsSceneObject || moveSceneObjectToGhost;
+        if (prefab == null || (needsPose && spawnPose == null))
         {
             Debug.LogWarning($"{name} : prefab ou spawnPose manquant.", this);
             return;
         }
 
-        SpawnedInstance = Instantiate(prefab, spawnPose.position, spawnPose.rotation, parent);
-        if (matchGhostScale) SetWorldScale(SpawnedInstance.transform, spawnPose.lossyScale);
+        if (IsSceneObject)
+        {
+            SpawnedInstance = prefab;
+            if (moveSceneObjectToGhost)
+                SpawnedInstance.transform.SetPositionAndRotation(spawnPose.position, spawnPose.rotation);
+            SpawnedInstance.SetActive(true);
+        }
+        else
+        {
+            SpawnedInstance = Instantiate(prefab, spawnPose.position, spawnPose.rotation, parent);
+            if (matchGhostScale) SetWorldScale(SpawnedInstance.transform, spawnPose.lossyScale);
+        }
 
         if (spawnSound != null)
-            AudioSource.PlayClipAtPoint(spawnSound, spawnPose.position, soundVolume);
+            AudioSource.PlayClipAtPoint(spawnSound, SpawnedInstance.transform.position, soundVolume);
         SendHaptics();
 
         StartCoroutine(Transition(SpawnedInstance.transform));

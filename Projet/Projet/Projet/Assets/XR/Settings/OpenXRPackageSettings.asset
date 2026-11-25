@@ -1710,6 +1710,8 @@ MonoBehaviour:
   - {fileID: 2051105749830685677}
   - {fileID: -5940274071135998820}
   - {fileID: -5998681726333590705}
+  - {fileID: -901939997048047619}
+  - {fileID: -8149307640577795251}
   - {fileID: 8980318060753866109}
   - {fileID: -6559185765804338520}
   - {fileID: -4756202077021157709}
@@ -1721,6 +1723,7 @@ MonoBehaviour:
   - {fileID: -7499073031166464939}
   - {fileID: 7666556398442971420}
   - {fileID: 3519736191714965447}
+  - {fileID: -2683401583839416078}
   - {fileID: -6978811377440417770}
   - {fileID: -6974919542627570209}
   - {fileID: 2269934188850680656}
@@ -1764,7 +1767,7 @@ MonoBehaviour:
     m_List: 00000000
   m_depthSubmissionMode: 0
   m_spacewarpMotionVectorTextureFormat: 0
-  m_optimizeBufferDiscards: 0
+  m_optimizeBufferDiscards: 1
   m_symmetricProjection: 0
   m_optimizeMultiviewRenderRegions: 0
   m_multiviewRenderRegionsOptimizationMode: 0
