@@ -13,6 +13,9 @@ public class WeighingScale : MonoBehaviour
     [SerializeField] float holdTime = 1f;       // must stay correct this long
     [SerializeField] float exitGraceTime = 0.25f; // ignore trigger exits shorter than this (stops flicker)
     [SerializeField] bool scaleAffectsWeight = true;
+    [Tooltip("Weigh by the object's real size in the world: an object that grew with the house weighs more. " +
+        "Use it for a plate that must agree with a real-size check, such as the padlock key.")]
+    [SerializeField] bool weighRealSize = false;
 
     [Header("Feedback")]
     [SerializeField] Renderer indicator;        // lamp / pad surface
@@ -73,10 +76,11 @@ public class WeighingScale : MonoBehaviour
         // Resizable objects: weight follows the size the player gave them (multiplier cubed). VRTwoHandScale keeps
         // that multiplier unchanged when Maison is resized, so objects brought in from outside the house weigh
         // the same whatever the house size (the house-space ratio below made them far too light once it grew).
-        float multiplier = requiredScaler != null ? requiredScaler.scaleMultiplier : 0f;
+        float multiplier = !weighRealSize && requiredScaler != null ? requiredScaler.scaleMultiplier : 0f;
         if (multiplier > 0f)
             return multiplier * multiplier * multiplier;
         // Other objects: measure in house space so resizing Maison itself does not change its puzzle targets.
+        // With weighRealSize the frame is the world: volume compared with the object's volume when the scene starts.
         return initialRelativeVolume > 0f ? RelativeVolume() / initialRelativeVolume : 1f;
     }
 
@@ -87,7 +91,7 @@ public class WeighingScale : MonoBehaviour
             requiredBody = requiredObject.GetComponentInChildren<Rigidbody>();
             requiredScaler = requiredBody != null ? requiredBody.GetComponent<VRTwoHandScale>() : null;
             var house = GetComponentInParent<VRHouseInteractionLock>();
-            weightReferenceFrame = house != null ? house.transform : transform.root;
+            weightReferenceFrame = weighRealSize ? null : house != null ? house.transform : transform.root;
             initialRelativeVolume = RelativeVolume();
         }
 
